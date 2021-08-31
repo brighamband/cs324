@@ -7,12 +7,13 @@ int printProcessId() {
   int pid = fork();
 
     if (pid == 0) {
-    printf("Parent Process id : %d\n", getpid());
-    printf("Child Process with parent id : %d\n", getppid());
+    fprintf(stderr, "Process ID: %d\n", getpid());
   }
 }
 
 int main(int argc, char* argv []) {
+  printProcessId();
+
   if (argc == 1) {
     puts("Make sure to specify a filename.");
     return 1;
@@ -31,10 +32,6 @@ int main(int argc, char* argv []) {
     puts(str);
   }
   fclose(file);
-
-  // printf("string: %s", str);
-  puts("");
-  printProcessId();
 
   return 0;
 }
