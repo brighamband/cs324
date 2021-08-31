@@ -1,3 +1,5 @@
+/* Use this command to compile catchmatch:  gcc simple.c -o catchmatch (add '&& ./a.out' to execute in one step) */
+
 #include <stdio.h>
 #include <unistd.h>
 
