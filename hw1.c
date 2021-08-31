@@ -1,4 +1,4 @@
-/* Use this command to compile catchmatch:  gcc hw1.c -o catchmatch (add '&& ./a.out' to execute in one step) */
+/* Use this command to compile catchmatch:  gcc hw1.c -o catchmatch (add '&& ./catchmatch' to execute in one step) */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -14,7 +14,7 @@ int printProcessId() {
 
 int main(int argc, char* argv []) {
 
-  if (argv[1] == NULL) {
+  if (argc == 1) {
     puts("Make sure to specify a filename.");
     return 1;
   }
