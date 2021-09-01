@@ -23,7 +23,7 @@ int main(int argc, char* argv []) {
   printProcessId();
 
   FILE* fp;
-  char str[100];
+  char str[1024];
 
   fp = fopen(argv[1], "r");
   if (fp == NULL) {
@@ -33,7 +33,7 @@ int main(int argc, char* argv []) {
 
   char* catmatchPattern = getenv("CATMATCH_PATTERN");
 
-  while(fgets(str, sizeof str, fp)) {
+  while(fgets(str, sizeof str, fp) != NULL) {
     int marker = 0;
     if (catmatchPattern != NULL) {
       char* foundPtr = strstr(str, catmatchPattern);
@@ -43,11 +43,6 @@ int main(int argc, char* argv []) {
   }
   printf("\n");
   fclose(fp);
-
-  // if (fgets(str, 100, file) != NULL) {
-  //   puts(str);
-  // }
-  // fclose(file);
 
   return 0;
 }
