@@ -6,21 +6,14 @@
 #include <unistd.h>
 #include <string.h>
 
-
-int printProcessId() {
-  int pid = fork();
-
-  if (pid == 0) {
-    fprintf(stderr, "Process ID: %d\n", getpid());
-  }
-}
-
-int main(int argc, char* argv []) {
+int main(int argc, char* argv[]) {
   if (argc == 1) {
     puts("Make sure to specify a filename.");
     return 1;
   }
-  printProcessId();
+
+  // Print process ID
+  fprintf(stderr, "Process ID: %d\n", getpid());
 
   FILE* fp;
   char str[1024];
@@ -35,6 +28,7 @@ int main(int argc, char* argv []) {
 
   while(fgets(str, sizeof str, fp) != NULL) {
     int marker = 0;
+    // Change marker to 1 if catmatch pattern env is found on the line
     if (catmatchPattern != NULL) {
       char* foundPtr = strstr(str, catmatchPattern);
       if (foundPtr != NULL) marker = 1;
