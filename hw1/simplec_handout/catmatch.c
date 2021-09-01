@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Print process ID
-  fprintf(stderr, "Process ID: %d\n", getpid());
+  fprintf(stderr, "Process ID: %d\n\n", getpid());
 
   FILE* fp;
   char str[1024];
