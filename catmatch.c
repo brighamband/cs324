@@ -10,7 +10,7 @@
 int printProcessId() {
   int pid = fork();
 
-    if (pid == 0) {
+  if (pid == 0) {
     fprintf(stderr, "Process ID: %d\n", getpid());
   }
 }
