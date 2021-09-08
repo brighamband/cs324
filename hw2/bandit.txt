@@ -7,6 +7,10 @@ level1:
 level2:
 WvmlqTFW+sn+TgJD9nEifb2cFNaDYaL3
 grep ^eget level3.txt --line-buffered | awk '{print $2}'
+level3:
+eAyRe5KDtiqxDoeqVCABnj6hBMhCR/Bd
+sort level4.txt | tail -n 1 | base64 -d
+level4:
 
 
 level9:
