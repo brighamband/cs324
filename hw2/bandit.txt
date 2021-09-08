@@ -6,7 +6,7 @@ level1:
 ./level2 2> /tmp/l2err
 level2:
 WvmlqTFW+sn+TgJD9nEifb2cFNaDYaL3
-grep ^eget leman vel3.txt --line-buffered | awk '{print $2}'
+grep ^eget level3.txt --line-buffered | awk '{print $2}'
 level3:
 eAyRe5KDtiqxDoeqVCABnj6hBMhCR/Bd
 sort level4.txt | tail -n 1 | base64 -d
@@ -16,4 +16,9 @@ dig txt bandit.cs324.internet-measurement.cs.byu.edu +short | md5sum | cut -c -3
 level5:
 Jp1NL6O/H7uPUesDQ7r1TPLH2oGlTyHn
 gunzip -c level6.tar.gz | tar -xO | tr F L
+level6:
+fb7cf39e8e0becdcd0468863cdc653e6
+curl https://imaal.byu.edu/cs324/bandit.txt -s | sha1sum | cut -c -32
+level7:
+level8:
 level9:
