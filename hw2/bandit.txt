@@ -3,8 +3,8 @@ bandit0
 BANDIT_LEVEL=1 ./level1
 level1:
 6/Q2LbNWe5a4KTk8ymUVrKuQ2J8B+/2+
-
-PIPELINE1
+./level2 2> /tmp/l2err
 level2:
+4utUC/pa/7fK5zU0Q3qPKPbmicmozKSc
 PASSWORD2
 PIPELINE2
