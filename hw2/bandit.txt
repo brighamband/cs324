@@ -1,0 +1,10 @@
+level0:
+bandit0
+BANDIT_LEVEL=1 ./level1
+level1:
+6/Q2LbNWe5a4KTk8ymUVrKuQ2J8B+/2+
+
+PIPELINE1
+level2:
+PASSWORD2
+PIPELINE2
