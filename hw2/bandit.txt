@@ -1,25 +1,12 @@
 level0:
-bandit0
+6/Q2LbNWe5a4KTk8ymUVrKuQ2J8B+/2+
 BANDIT_LEVEL=1 ./level1
 level1:
-6/Q2LbNWe5a4KTk8ymUVrKuQ2J8B+/2+
+4utUC/pa/7fK5zU0Q3qPKPbmicmozKSc
 ./level2 2> /tmp/l2err
 level2:
-4utUC/pa/7fK5zU0Q3qPKPbmicmozKSc
-grep ^eget level3.txt --line-buffered | awk '{print $2}'
-level3:
 WvmlqTFW+sn+TgJD9nEifb2cFNaDYaL3
+grep ^eget level3.txt --line-buffered | awk '{print $2}'
 
 
-
-
-
-
-
-
-
-Actual:
-level0:
-6/Q2....ls
-
-**See Derek Bevan comment on #homework channel
+level9:
