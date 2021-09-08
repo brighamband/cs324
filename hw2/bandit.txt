@@ -23,4 +23,6 @@ level7:
 Uoux218Rtfi8Eg1UmIfZ9m4NErlTW+d9
 ./level8
 level8:
+WWvs5PXxiY81gLjw60+mBccj6bGACwdU
+sort level9.txt | uniq -c | sort | tail -n 1 | awk '{print $2}'
 level9:
