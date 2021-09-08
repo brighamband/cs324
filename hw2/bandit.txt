@@ -6,7 +6,7 @@ level1:
 ./level2 2> /tmp/l2err
 level2:
 4utUC/pa/7fK5zU0Q3qPKPbmicmozKSc
-?
+grep ^eget level3.txt --line-buffered | awk '{print $2}'
 level3:
 WvmlqTFW+sn+TgJD9nEifb2cFNaDYaL3
 
