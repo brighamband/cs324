@@ -6,5 +6,20 @@ level1:
 ./level2 2> /tmp/l2err
 level2:
 4utUC/pa/7fK5zU0Q3qPKPbmicmozKSc
-PASSWORD2
-PIPELINE2
+?
+level3:
+WvmlqTFW+sn+TgJD9nEifb2cFNaDYaL3
+
+
+
+
+
+
+
+
+
+Actual:
+level0:
+6/Q2....ls
+
+**See Derek Bevan comment on #homework channel
