@@ -10,4 +10,7 @@
     Output (after):   USER      PID       PPID      S   CMD
                       abrigham  2481914   2472496   S   cat
 5.  Before and after, the commands have the same user, pid, ppd, and s.  However, they differ in their commands (before is exec, after is cat).  This happens because execve call the new process passed in and replaces the running process with it.  Because it's still the same process, the pid and ppid stay the same.
- 
+6.  Output: Program "./exec" has pid 2484788. Sleeping.
+            No program to exec.  Exiting...
+    This time, it runs the initial print statement that prints out exec (since that's the initial program being run) and its pid.  It then sleeps for 30 seconds.  After sleeping, it checks to see if an command line argument was passed in.  Since it received no arguments, it prints that there's no program to execute and exits.
+    
