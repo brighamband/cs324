@@ -13,4 +13,8 @@
 6.  Output: Program "./exec" has pid 2484788. Sleeping.
             No program to exec.  Exiting...
     This time, it runs the initial print statement that prints out exec (since that's the initial program being run) and its pid.  It then sleeps for 30 seconds.  After sleeping, it checks to see if an command line argument was passed in.  Since it received no arguments, it prints that there's no program to execute and exits.
-    
+7.  Fork.c starts the program and prints its pid.  Then it forks, and if there's an error forking (the forked process id is less than 0), it will print the error and exit.  Afterwards, it will print the parent id, then sleep 30 seconds.  Then it runs code in the child which prints section B, sleeps, prints done, then exits.  Section C is for the parent only, and that will run, doing exactly the same thing as B, but it sleeps for 60 seconds instead.  Lastly, both the parent and child run section D, which prints then sleeps 30 seconds.
+8.  Section A - Parent & Child
+    Section B - Child
+    Section C - Parent
+    Section D - Parent & Child
