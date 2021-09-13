@@ -13,8 +13,27 @@
 6.  Output: Program "./exec" has pid 2484788. Sleeping.
             No program to exec.  Exiting...
     This time, it runs the initial print statement that prints out exec (since that's the initial program being run) and its pid.  It then sleeps for 30 seconds.  After sleeping, it checks to see if an command line argument was passed in.  Since it received no arguments, it prints that there's no program to execute and exits.
-7.  Fork.c starts the program and prints its pid.  Then it forks, and if there's an error forking (the forked process id is less than 0), it will print the error and exit.  Afterwards, it will print the parent id, then sleep 30 seconds.  Then it runs code in the child which prints section B, sleeps, prints done, then exits.  Section C is for the parent only, and that will run, doing exactly the same thing as B, but it sleeps for 60 seconds instead.  Lastly, both the parent and child run section D, which prints then sleeps 30 seconds.
+7.  Fork.c starts the program and prints its pid.  Then it forks, and if there's an error forking (the forked process id is less than 0), it will print the error and exit.  Afterwards, it will print the parent and child ids, then sleep 30 seconds.  Then it runs code in the child which prints section B, sleeps, prints done, then exits.  Section C is for the parent only, and that will run, doing exactly the same thing as B, but it sleeps for 60 seconds instead.  Lastly, both the parent and child run section D, which prints then sleeps 30 seconds.
 8.  Section A - Parent & Child
     Section B - Child
     Section C - Parent
     Section D - Parent & Child
+9.  First Window
+      Command:  ./fork
+      Output:   Starting program; process has pid 2497643
+                Section A;  pid 2497643
+                Section A;  pid 2497644
+                Section C
+                Section B
+                Section B done sleeping
+                Section C done sleeping
+    Second Window
+      Command (before): ps -p 2497643,2497644 -o user,pid,ppid,state,ucmd --forest
+      Output (before):  USER      PID       PPID      S   CMD
+                        abrigham  2497643   2472496   S   fork
+                        abrigham  2497644   2497643   S   \_ fork
+      Command (after):  ps -p 2497643,2497644 -o user,pid,ppid,state,ucmd --forest
+      Output (after):   USER      PID       PPID      S   CMD
+                        abrigham  2497643   2472496   S   fork
+                        abrigham  2497644   2497643   Z   \_ fork <defunct>
+10. fixme
