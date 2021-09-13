@@ -4,3 +4,10 @@
     Output: Program "./exec" has pid 2476743. Sleeping.
             Running exec of "/bin/cat"
             (Then it just reprints whatever is entered as input)
+4.  Commands: ps -q 2481914 -o user,pid,ppid,state,ucmd
+    Output (before):  USER      PID       PPID      S   CMD
+                      abrigham  2481914   2472496   S   exec
+    Output (after):   USER      PID       PPID      S   CMD
+                      abrigham  2481914   2472496   S   cat
+5.  Before and after, the commands have the same user, pid, ppd, and s.  However, they differ in their commands (before is exec, after is cat).  This happens because execve call the new process passed in and replaces the running process with it.  Because it's still the same process, the pid and ppid stay the same.
+ 
