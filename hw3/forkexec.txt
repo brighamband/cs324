@@ -38,3 +38,19 @@
                         abrigham  2497644   2497643   Z   \_ fork <defunct>
 10. The 2 ps commands have the same users, pids, and ppids.  They differ however in their S (state) columns and CMD (columns).  For the command before, it says that the state is Sleep for both the parent and child, which makes sense since right after the fork they jump into sleep functions.  On the second command after B (child) is done sleeping, the parent is still asleep for another 30 seconds, yet surprisingly the ps command not only returns the parent, but also returns the child, but it's in a zombie state (since it's been exited/killed but the parent is still active).
 11. If you put a `wait(NULL)` in section C between the 2 sleep commands, that will resolve it.  That will make it so both the parent and child sleep for 30 seconds, but this time the parent will wait for the child to exit, then since it's already waiting it will be able to clean up the child immediately before proceeding to wait another 30 seconds.  That's why on the second command it doesn't show the child anymore, because by then the parent has effectively cleaned it up.
+12. First Window
+      Command:  ./fork
+      Output:   Section A;  pid 2509682
+                Section A;  pid 2509683
+                Section C
+                Section B
+                Section C done sleeping
+    Second Window
+      Command (before):   ps -p 2509682,2509683 -o user,pid,ppid,state,ucmd --forest
+      Output (before):    USER        PID       PPID      S   CMD
+                          abrigham    2509682   2472496   S   fork
+                          abrigham    2509683   2509682   S   \_ fork
+      Command (after):    ps -p 2509682,2509683 -o user,pid,ppid,state,ucmd --forest
+      Output (after):     USER        PID       PPID      S   CMD
+                          abrigham    2509683   1         S   fork
+13. For these commands, both times they show the child pid, indicating the child process is running.  With this version of the program, both parent and child sleep 30 seconds, then the parent is done sleeping and exits, but the child still has to sleep another 30 seconds.  So even though at this point the first window shows that the program is done running, the right window ps shows that the child process is still running behind the scenes until the 30 seconds is up and it stops sleeping then exits.
