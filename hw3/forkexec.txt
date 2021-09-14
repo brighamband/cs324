@@ -54,3 +54,10 @@
       Output (after):     USER        PID       PPID      S   CMD
                           abrigham    2509683   1         S   fork
 13. For these commands, both times they show the child pid, indicating the child process is running.  With this version of the program, both parent and child sleep 30 seconds, then the parent is done sleeping and exits, but the child still has to sleep another 30 seconds.  So even though at this point the first window shows that the program is done running, the right window ps shows that the child process is still running behind the scenes until the 30 seconds is up and it stops sleeping then exits.
+14. fork-output.txt contents:   BEFORE FORK
+                                SECTION A
+                                SECTION A
+                                SECTION C
+                                SECTION B
+15. The parent calls the fprintf statement to print section A twice, then interestingly the parent code for Section C is run first, writing that print statement to the output file before the Section B print statement is written.  Lastly, it was interesting to not that SECTION D wasn't printed at all.  It makes sense though, since now that there is no sleeping, when the parent and child finish printing, they jump straight down to exit(0) lines, thus terminating the parent and child processes, keeping them from running section D.
+16. 
