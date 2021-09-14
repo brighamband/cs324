@@ -49,6 +49,8 @@ int main(int argc, char *argv[]) {
 			exit(0);
 		}
 
+		dup2(fileno(forkOut), 1);	// Redir child stdin to go to forkOut stream
+
 		printf("Running exec of \"%s\"\n", argv[1]);
 		execve(argv[1], &argv[1], newenviron);
 		printf("End of program \"%s\".\n", argv[0]);

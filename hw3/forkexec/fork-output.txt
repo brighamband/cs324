@@ -3,3 +3,5 @@ SECTION A
 SECTION C
 SECTION A
 SECTION B
+Running exec of "/bin/cat"
+foobar

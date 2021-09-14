@@ -78,3 +78,18 @@
                 foobar
                 Section C
                 Section C done sleeping
+18. Cmd Output:                 Starting program; process has pid 2367539
+                                Section A;  pid 2367539
+                                Section A;  pid 2367540
+                                Section B
+                                Section B done sleeping
+                                Program "./fork" has pid 2367540. Sleeping.
+                                Section C
+                                Section C done sleeping
+    fork-output.txt Contents:   BEFORE FORK
+                                SECTION A
+                                SECTION C
+                                SECTION A
+                                SECTION B
+                                Running exec of "/bin/cat"
+                                foobar
