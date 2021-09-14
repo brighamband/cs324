@@ -68,3 +68,13 @@
                 hello from Section B
                 Section C
                 Section C done sleeping
+17. Output:     Starting program; process has pid 2366163
+                Section A;  pid 2366163
+                Section A;  pid 2366164
+                Section B
+                Section B done sleeping
+                Program "./fork" has pid 2366164. Sleeping.
+                Running exec of "/bin/cat"
+                foobar
+                Section C
+                Section C done sleeping
