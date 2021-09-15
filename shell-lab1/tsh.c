@@ -241,20 +241,19 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-    // char *arguments[100];
-    // parseline(argv, arguments);
-    printf("Amazing ");
     if (strcmp(argv[0], "quit") == 0) {
         exit(EXIT_SUCCESS);
     }
-    //     exit(EXIT_SUCCESS)
-    // if "fg"
-    //     return 1
-    // if "bg"
-    //     return 1
-    // if "jobs"
+    if (strcmp(argv[0], "fg") == 0) {
+        return 1;
+    }
+    if (strcmp(argv[0], "bg") == 0) {
+        return 1;
+    }
+    if (strcmp(argv[0], "jobs") == 0) {
         // listjobs()
-    //     return 1
+        return 1;
+    }
 
     return 0;     /* not a builtin command */
 }
