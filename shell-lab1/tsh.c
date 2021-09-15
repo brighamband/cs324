@@ -54,39 +54,38 @@ int main(int argc, char **argv)
     /* Parse the command line */
     while ((c = getopt(argc, argv, "hvp")) != EOF) {
         switch (c) {
-        case 'h':             /* print help message */
+            case 'h':             /* print help message */
+                usage();
+            break;
+            case 'v':             /* emit additional diagnostic info */
+                verbose = 1;
+            break;
+            case 'p':             /* don't print a prompt */
+                emit_prompt = 0;  /* handy for automatic testing */
+            break;
+        default:
             usage();
-	    break;
-        case 'v':             /* emit additional diagnostic info */
-            verbose = 1;
-	    break;
-        case 'p':             /* don't print a prompt */
-            emit_prompt = 0;  /* handy for automatic testing */
-	    break;
-	default:
-            usage();
-	}
+        }
     }
 
     /* Execute the shell's read/eval loop */
     while (1) {
+        /* Read command line */
+        if (emit_prompt) {
+            printf("%s", prompt);
+            fflush(stdout);
+        }
+        if ((fgets(cmdline, MAXLINE, stdin) == NULL) && ferror(stdin))
+            app_error("fgets error");
+        if (feof(stdin)) { /* End of file (ctrl-d) */
+            fflush(stdout);
+            exit(0);
+        }
 
-	/* Read command line */
-	if (emit_prompt) {
-	    printf("%s", prompt);
-	    fflush(stdout);
-	}
-	if ((fgets(cmdline, MAXLINE, stdin) == NULL) && ferror(stdin))
-	    app_error("fgets error");
-	if (feof(stdin)) { /* End of file (ctrl-d) */
-	    fflush(stdout);
-	    exit(0);
-	}
-
-	/* Evaluate the command line */
-	eval(cmdline);
-	fflush(stdout);
-	fflush(stdout);
+        /* Evaluate the command line */
+        eval(cmdline);
+        fflush(stdout);
+        fflush(stdout);
     } 
 
     exit(0); /* control never reaches here */
@@ -143,26 +142,26 @@ int parseargs(char **argv, int *cmds, int *stdin_redir, int *stdout_redir)
             argindex++;
             if (!argv[argindex]) { /* if we have reached the end, then break */
                 break;
-	    }
+	        }
             stdin_redir[cmdindex] = argindex;
-	} else if (strcmp(argv[argindex], ">") == 0) {
+	    } else if (strcmp(argv[argindex], ">") == 0) {
             argv[argindex] = NULL;
             argindex++;
             if (!argv[argindex]) { /* if we have reached the end, then break */
                 break;
-	    }
+	        }
             stdout_redir[cmdindex] = argindex;
-	} else if (strcmp(argv[argindex], "|") == 0) {
+	    } else if (strcmp(argv[argindex], "|") == 0) {
             argv[argindex] = NULL;
             argindex++;
             if (!argv[argindex]) { /* if we have reached the end, then break */
                 break;
-	    }
+	        }
             cmdindex++;
             cmds[cmdindex] = argindex;
             stdin_redir[cmdindex] = -1;
             stdout_redir[cmdindex] = -1;
-	}
+	    }
         argindex++;
     }
 
@@ -187,7 +186,7 @@ int parseline(const char *cmdline, char **argv)
     strcpy(buf, cmdline);
     buf[strlen(buf)-1] = ' ';  /* replace trailing '\n' with space */
     while (*buf && (*buf == ' ')) /* ignore leading spaces */
-	buf++;
+	    buf++;
 
     /* Build the argv list */
     argc = 0;
@@ -200,19 +199,19 @@ int parseline(const char *cmdline, char **argv)
     }
 
     while (delim) {
-	argv[argc++] = buf;
-	*delim = '\0';
-	buf = delim + 1;
-	while (*buf && (*buf == ' ')) /* ignore spaces */
-	       buf++;
+        argv[argc++] = buf;
+        *delim = '\0';
+        buf = delim + 1;
+        while (*buf && (*buf == ' ')) /* ignore spaces */
+            buf++;
 
-	if (*buf == '\'') {
-	    buf++;
-	    delim = strchr(buf, '\'');
-	}
-	else {
-	    delim = strchr(buf, ' ');
-	}
+        if (*buf == '\'') {
+            buf++;
+            delim = strchr(buf, '\'');
+        }
+        else {
+            delim = strchr(buf, ' ');
+        }
     }
     argv[argc] = NULL;
     
@@ -268,6 +267,3 @@ void app_error(char *msg)
     fprintf(stdout, "%s\n", msg);
     exit(1);
 }
-
-
-
