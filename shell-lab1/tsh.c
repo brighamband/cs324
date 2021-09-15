@@ -104,6 +104,13 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    char *argv[100];
+    parseline(cmdline, argv);
+
+    if (builtin_cmd(argv) != 0) {
+        return;
+    }
+    // FIXME ...
     return;
 }
 
@@ -228,9 +235,25 @@ int parseline(const char *cmdline, char **argv)
 /* 
  * builtin_cmd - If the user has typed a built-in command then execute
  *    it immediately.  
+ *     Returns 1 for a built-in cmd and 0 if not a built-in cmd
  */
 int builtin_cmd(char **argv) 
 {
+    // char *arguments[100];
+    // parseline(argv, arguments);
+    printf("Amazing ");
+    if (strcmp(argv[0], "quit") == 0) {
+        exit(EXIT_SUCCESS);
+    }
+    //     exit(EXIT_SUCCESS)
+    // if "fg"
+    //     return 1
+    // if "bg"
+    //     return 1
+    // if "jobs"
+        // listjobs()
+    //     return 1
+
     return 0;     /* not a builtin command */
 }
 
