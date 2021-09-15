@@ -104,10 +104,12 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
-    char *argv[100];
+    char *argv[MAXARGS];
     parseline(cmdline, argv);
 
-    if (builtin_cmd(argv) != 0) {
+    // See pg 791
+
+    if (!builtin_cmd(argv)) {
         return;
     }
     // FIXME ...
