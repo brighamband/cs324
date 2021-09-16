@@ -109,7 +109,7 @@ void eval(char *cmdline)
 
     // See pg 791
 
-    if (!builtin_cmd(argv)) {
+    if (builtin_cmd(argv) != 0) {
         return;
     }
     // FIXME ...
@@ -245,12 +245,15 @@ int builtin_cmd(char **argv)
         exit(EXIT_SUCCESS);
     }
     if (strcmp(argv[0], "fg") == 0) {
+        printf("fg\n");
         return 1;
     }
     if (strcmp(argv[0], "bg") == 0) {
+        printf("bg\n");
         return 1;
     }
     if (strcmp(argv[0], "jobs") == 0) {
+        printf("jobs\n");
         // listjobs()
         return 1;
     }
