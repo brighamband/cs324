@@ -105,13 +105,41 @@ int main(int argc, char **argv)
 void eval(char *cmdline) 
 {
     char *argv[MAXARGS];
-    parseline(cmdline, argv);
+    char buf[MAXLINE];
+    pid_t pid;
 
-    // See pg 791
+    strcpy(buf, cmdline);
+    int bg = parseline(buf, argv);
 
-    if (builtin_cmd(argv) != 0) {
+    // Ignore empty lines
+    if (argv[0] == NULL) {
         return;
     }
+
+    // If it's a built-in cmd
+    if (builtin_cmd(argv) != 0) {
+        if ((pid = fork()) == 0) {  // Run child code
+            if (execve(argv[0], argv, environ) < 0) {   // Throw error and stop child process if bad cmd
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+        }
+
+        // if (!bg) {
+        //     int status;
+        //     if (waitpid(pid, &status, 0) < 0) {
+        //         unix_error("waitfg: waitpid error");
+        //     }
+        // } else {
+        //     printf("%d %s", pid, cmdline);
+        // }
+        return;
+    }
+
+    // int cpid;   // Child pid
+
+    // if argv[0]
+
     // FIXME ...
     return;
 }
