@@ -136,6 +136,18 @@ void eval(char *cmdline)
         return;
     }
 
+    int *cmds[MAXARGS];
+    int *stdin_redir[MAXARGS];
+    int *stdout_redir[MAXARGS];
+
+    parseargs(argv, *cmds = NULL, *stdin_redir = NULL, *stdout_redir = NULL);
+
+  
+    // printf("len: %ld\n", sizeof(argv));
+    // for (size_t i = 0; i < strlen(argv); i++) {
+    //     printf("buf:  %s\n%s", buf, argv);
+    // }
+
     // int cpid;   // Child pid
 
     // if argv[0]
