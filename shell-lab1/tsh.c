@@ -144,13 +144,16 @@ void eval(char *cmdline)
   
     int cpid;   // Child pid
 
-    // if ((cpid = fork()) == 0) {  // Run child code
-        
-    // }
 
     for (int i = 0; i < cmdsLen; i++) {
         // printf("cmds[i]:  %s\n", argv[cmds[i]]);
 
+        if ((pid = fork()) == 0) {  // Run child code
+            if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0) {   // Throw error and stop child process if bad cmd
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+        }
         // fork
             // child - exec
             // parent - first cmd
