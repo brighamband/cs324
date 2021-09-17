@@ -148,7 +148,6 @@ void eval(char *cmdline)
         
     // }
 
-    // printf("len: %li\n", sizeof(cmds) / sizeof(int));
     for (int i = 0; i < cmdsLen; i++) {
         // printf("cmds[i]:  %s\n", argv[cmds[i]]);
 
