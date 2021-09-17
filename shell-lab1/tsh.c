@@ -16,6 +16,9 @@
 /* Misc manifest constants */
 #define MAXLINE    1024   /* max line size */
 #define MAXARGS     128   /* max args on a command line */
+#define READ_END      0   /* read end of pipe */
+#define WRITE_END     1   /* write end of pipe */
+#define CHILD_PROCESS 0   /* child process of fork */
 
 /* Global variables */
 extern char **environ;      /* defined in libc */
@@ -37,6 +40,20 @@ void usage(void);
 void unix_error(char *msg);
 void app_error(char *msg);
 typedef void handler_t(int);
+
+/* EXTRA WRAPPER FUNCTIONS FOR SYSTEM CALLS - See bottom of file for function bodies */
+pid_t Fork(void);
+int Dup2(int fd1, int fd2);
+int Pipe(int* pipedes);
+void Execve(const char *filename, char *const argv[], char *const envp[]);
+void Execvp(const char *filename, char *const argv[]);
+pid_t Wait(int *status);
+pid_t Waitpid(pid_t pid, int *iptr, int options);
+FILE* Fopen(const char *filename, const char *mode);
+void Fclose(FILE *fp);
+void Setpgid(pid_t pid, pid_t pgid);
+void Close(int fd);
+
 
 /*
  * main - The shell's main routine 
@@ -105,15 +122,15 @@ int main(int argc, char **argv)
 void eval(char *cmdline) 
 {
     char *argv[MAXARGS];
-    char buf[MAXLINE];
     pid_t pid;
     int cmds[MAXARGS];
     int stdin_redir[MAXARGS];
     int stdout_redir[MAXARGS];
-    // int pipes[MAXARGS][2];  // Making max number of pipes, can also just juggle 2 pipes like pipes[2].  Make sure to initialize cmdsLen - 1 pipes
+    int childPids[MAXARGS];
+    int pipes[MAXARGS][2];  // Making max number of pipes, can also just juggle 2 pipes like pipes[2].  Make sure to initialize numCmds - 1 pipes
+    int groupId;
 
-    strcpy(buf, cmdline);
-    int bg = parseline(buf, argv);
+    parseline(cmdline, argv); 
 
     // Ignore empty lines
     if (argv[0] == NULL)
@@ -124,55 +141,49 @@ void eval(char *cmdline)
         return;
 
     // If a custom (not built-in) cmd, run this
-    int cmdsLen = parseargs(argv, cmds, stdin_redir, stdout_redir); 
+    int numCmds = parseargs(argv, cmds, stdin_redir, stdout_redir); 
+    // STDIN_FILENO
+    // STDIN_FILENO
 
-    for (int i = 0; i < cmdsLen; i++) {
-        if ((pid = fork()) == 0) {  // Run child code
-            if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0) {   // Throw error and stop child process if bad cmd
-                printf("%s: Command not found\n", argv[0]);
-                exit(0);
-            }
-        }
-
-        // Parent waits for foreground job to terminate
-        if (!bg) {
-            int status;
-            int cpid = waitpid(pid, &status, 0);
-            if (cpid < 0)
-                unix_error("waitfg: waitpid error");
-            if (i  == 0) {
-                // Save the child's pid
-            } else {
-                // Set group id of cur child to be pid of first command
-            }
-        } else {
-            printf("%d %s", pid, cmdline);
-        }
+    // Make pipes (num of pipes is 1 less than numCmds - they go between cmds)
+    for (int i = 0; i < numCmds - 1; i++) {
+        Pipe(pipes[i]);
     }
-    
 
-  
-    // int cpid;   // Child pid
+    for (int i = 0; i < numCmds; i++) {
+        pid = Fork();
 
+        // Child (for each cmd)
+        if (pid == CHILD_PROCESS) {
+            // Redirect
+                // in pipe
+                // out pipe
+                // in file
+                // out file
+                
+            // Close all pipes
+            for (int i = 0; i < numCmds - 1; i++) {
+                Close(pipes[i][READ_END]);
+                Close(pipes[i][WRITE_END]);
+            }
 
-    // for (int i = 0; i < cmdsLen; i++) {
-    //     // printf("cmds[i]:  %s\n", argv[cmds[i]]);
+            // Exec
+            Execve(argv[cmds[i]], &argv[cmds[i]], environ);
+        }
 
-    //     if ((pid = fork()) == 0) {  // Run child code
-    //         if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0) {   // Throw error and stop child process if bad cmd
-    //             printf("%s: Command not found.\n", argv[0]);
-    //             exit(0);
-    //         }
-    //     }
-    //     // fork
-    //         // child - exec
-    //         // parent - first cmd
-    //         if (i == 0) {
-    //             // save child's pid
-    //         } else {
-    //             // In parent, setpgid for children
-    //         }
-    // }
+        // Parent (for each cmd)
+        if (pid != CHILD_PROCESS) {
+            childPids[i] = pid; // Save child pid
+
+            groupId = childPids[0]; // Set group id to first child pid
+        }    
+    }
+
+    // Parent waits for kids
+    for (int i = 0; i < numCmds; i++) {
+        int status;
+        Waitpid(pid, &status, 0);
+    }
 
     return;
 }
@@ -345,4 +356,97 @@ void app_error(char *msg)
 {
     fprintf(stdout, "%s\n", msg);
     exit(1);
+}
+
+/*
+ * EXTRA WRAPPER FUNCTIONS FOR SYSTEM CALLS - Taken from book - http://csapp.cs.cmu.edu/3e/ics3/code/src/csapp.c
+ */
+pid_t Fork(void) 
+{
+    pid_t pid;
+
+    if ((pid = fork()) < 0)
+	unix_error("Fork error");
+    return pid;
+}
+
+int Dup2(int fd1, int fd2) 
+{
+    int rc;
+
+    if ((rc = dup2(fd1, fd2)) < 0)
+	unix_error("Dup2 error");
+    return rc;
+}
+
+int Pipe(int* pipedes) {
+    int rc;
+
+    if ((rc = pipe(pipedes) < 0)) {
+        unix_error("Pipe error");
+    }
+    return rc;
+}
+
+void Execve(const char *filename, char *const argv[], char *const envp[]) 
+{
+    if (execve(filename, argv, envp) < 0)
+	unix_error("Execve error");
+}
+
+void Execvp(const char *filename, char *const argv[]) 
+{
+    if (execvp(filename, argv) < 0)
+	unix_error("Execve error");
+}
+
+pid_t Wait(int *status) 
+{
+    pid_t pid;
+
+    if ((pid  = wait(status)) < 0)
+	unix_error("Wait error");
+    return pid;
+}
+
+pid_t Waitpid(pid_t pid, int *iptr, int options) 
+{
+    pid_t retpid;
+
+    if ((retpid  = waitpid(pid, iptr, options)) < 0) 
+	unix_error("Waitpid error");
+    return(retpid);
+}
+
+FILE* Fopen(const char *filename, const char *mode) 
+{
+    FILE *fp;
+
+    if ((fp = fopen(filename, mode)) == NULL) {
+	    unix_error("Fopen error"); 
+    }
+
+    return fp;
+}
+
+void Fclose(FILE *fp) 
+{
+    if (fclose(fp) != 0)
+	unix_error("Fclose error");
+}
+
+void Setpgid(pid_t pid, pid_t pgid) {
+    int rc;
+
+    if ((rc = setpgid(pid, pgid)) < 0)
+	unix_error("Setpgid error");
+    return;
+}
+
+void Close(int fd) 
+{
+    int rc;
+
+    if ((rc = close(fd)) < 0)
+	unix_error("Close error");
 }
