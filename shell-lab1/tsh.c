@@ -140,30 +140,31 @@ void eval(char *cmdline)
     // int *cmds[MAXARGS];
     // int *stdin_redir[MAXARGS];
     // int *stdout_redir[MAXARGS];
-
     // parseargs(argv, *cmds = NULL, *stdin_redir = NULL, *stdout_redir = NULL);
 
     int cmds[MAXARGS];
     int stdin_redir[MAXARGS];
     int stdout_redir[MAXARGS];
 
-    parseargs(argv, cmds, stdin_redir, stdout_redir); 
+    int cmdsLen = parseargs(argv, cmds, stdin_redir, stdout_redir); 
   
     int cpid;   // Child pid
 
-    if ((cpid = fork()) == 0) {  // Run child code
+    // if ((cpid = fork()) == 0) {  // Run child code
         
-    }
+    // }
 
     // printf("len: %li\n", sizeof(cmds) / sizeof(int));
-    // for (size_t i = 0; i < (sizeof(cmds) / sizeof(int)); i++) {
-    //     printf("cmds[i]:  %s\n", argv[cmds[i]]);
-    // }
+    for (int i = 0; i < cmdsLen; i++) {
+        printf("cmds[i]:  %s\n", argv[cmds[i]]);
+    }
+
+
+    // In parent, setpgid for children
 
 
     // if argv[0]
 
-    // FIXME ...
     return;
 }
 
