@@ -109,7 +109,8 @@ void eval(char *cmdline)
     pid_t pid;
 
     strcpy(buf, cmdline);
-    int bg = parseline(buf, argv);
+    //int bg = // move next line up here if used 
+    parseline(buf, argv);
 
     // Ignore empty lines
     if (argv[0] == NULL) {
@@ -136,19 +137,29 @@ void eval(char *cmdline)
         return;
     }
 
-    int *cmds[MAXARGS];
-    int *stdin_redir[MAXARGS];
-    int *stdout_redir[MAXARGS];
+    // int *cmds[MAXARGS];
+    // int *stdin_redir[MAXARGS];
+    // int *stdout_redir[MAXARGS];
 
-    parseargs(argv, *cmds = NULL, *stdin_redir = NULL, *stdout_redir = NULL);
+    // parseargs(argv, *cmds = NULL, *stdin_redir = NULL, *stdout_redir = NULL);
 
+    int cmds[MAXARGS];
+    int stdin_redir[MAXARGS];
+    int stdout_redir[MAXARGS];
+
+    parseargs(argv, cmds, stdin_redir, stdout_redir); 
   
-    // printf("len: %ld\n", sizeof(argv));
-    // for (size_t i = 0; i < strlen(argv); i++) {
-    //     printf("buf:  %s\n%s", buf, argv);
+    int cpid;   // Child pid
+
+    if ((cpid = fork()) == 0) {  // Run child code
+        
+    }
+
+    // printf("len: %li\n", sizeof(cmds) / sizeof(int));
+    // for (size_t i = 0; i < (sizeof(cmds) / sizeof(int)); i++) {
+    //     printf("cmds[i]:  %s\n", argv[cmds[i]]);
     // }
 
-    // int cpid;   // Child pid
 
     // if argv[0]
 
