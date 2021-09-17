@@ -136,11 +136,6 @@ void eval(char *cmdline)
         // return;
     }
 
-    // int *cmds[MAXARGS];
-    // int *stdin_redir[MAXARGS];
-    // int *stdout_redir[MAXARGS];
-    // parseargs(argv, *cmds = NULL, *stdin_redir = NULL, *stdout_redir = NULL);
-
     int cmds[MAXARGS];
     int stdin_redir[MAXARGS];
     int stdout_redir[MAXARGS];
