@@ -109,8 +109,7 @@ void eval(char *cmdline)
     pid_t pid;
 
     strcpy(buf, cmdline);
-    //int bg = // move next line up here if used 
-    parseline(buf, argv);
+    int bg = parseline(buf, argv);
 
     // Ignore empty lines
     if (argv[0] == NULL) {
@@ -126,15 +125,15 @@ void eval(char *cmdline)
             }
         }
 
-        // if (!bg) {
-        //     int status;
-        //     if (waitpid(pid, &status, 0) < 0) {
-        //         unix_error("waitfg: waitpid error");
-        //     }
-        // } else {
-        //     printf("%d %s", pid, cmdline);
-        // }
-        return;
+        if (!bg) {
+            int status;
+            if (waitpid(pid, &status, 0) < 0) {
+                unix_error("waitfg: waitpid error");
+            }
+        } else {
+            printf("%d %s", pid, cmdline);
+        }
+        // return;
     }
 
     // int *cmds[MAXARGS];
@@ -156,14 +155,17 @@ void eval(char *cmdline)
 
     // printf("len: %li\n", sizeof(cmds) / sizeof(int));
     for (int i = 0; i < cmdsLen; i++) {
-        printf("cmds[i]:  %s\n", argv[cmds[i]]);
+        // printf("cmds[i]:  %s\n", argv[cmds[i]]);
+
+        // fork
+            // child - exec
+            // parent - first cmd
+            if (i == 0) {
+                // save child's pid
+            } else {
+                // In parent, setpgid for children
+            }
     }
-
-
-    // In parent, setpgid for children
-
-
-    // if argv[0]
 
     return;
 }
