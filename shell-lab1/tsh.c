@@ -19,6 +19,8 @@
 #define READ_END      0   /* read end of pipe */
 #define WRITE_END     1   /* write end of pipe */
 #define CHILD_PROCESS 0   /* child process of fork */
+#define TRUE          1   /* boolean substitute */
+#define FALSE         0   /* boolean substitute */
 
 /* Global variables */
 extern char **environ;      /* defined in libc */
@@ -152,30 +154,42 @@ void eval(char *cmdline)
 
         // Child (for each cmd)
         if (pid == CHILD_PROCESS) {
+            int redirectedInput = FALSE;
+            int redirectedOutput = FALSE;
             
-            // Redirect
-                // in file
+            // If there's an input file, redirect stdin to input file
             if (stdin_redir[i] > 0) {
+                redirectedInput = TRUE;
                 FILE *inFile = Fopen(argv[stdin_redir[i]], "r");
                 Dup2(fileno(inFile), STDIN_FILENO);
                 Fclose(inFile);
             }
-                // out file
+
+            // If there's an output file, redirect stdout to output file
             if (stdout_redir[i] > 0) {
+                redirectedOutput = TRUE;
                 FILE *outFile = Fopen(argv[stdout_redir[i]], "w");
                 Dup2(fileno(outFile), STDOUT_FILENO);
                 Fclose(outFile);
             }
-                // in pipe
-                // out pipe
 
-            // Close all pipes
-            for (int i = 0; i < numCmds - 1; i++) {
-                Close(pipes[i][READ_END]);
-                Close(pipes[i][WRITE_END]);
+            // Redirect stdout to write end (run this for all pipes but the last and if the output wasn't redirected to a file)
+            if (i < numCmds - 1 && !redirectedOutput) {
+                Dup2(pipes[i][WRITE_END], STDOUT_FILENO);
             }
 
-            // Exec
+            // Redirect stdin to read end (run this for all pipes but the first and if the input wasn't redirected to a file)
+            if (i > 0 && !redirectedInput) {
+                Dup2(pipes[i - 1][READ_END], STDIN_FILENO);
+            }
+        
+            // Close all pipes (even the ones you never used)
+            for (int j = 0; j < numCmds - 1; j++) {
+                Close(pipes[j][READ_END]);
+                Close(pipes[j][WRITE_END]);
+            }
+
+            // Execute cmd
             Execve(argv[cmds[i]], &argv[cmds[i]], environ);
         }
 
@@ -184,15 +198,22 @@ void eval(char *cmdline)
             childPids[i] = pid; // Save child pid
 
             groupId = childPids[0]; // Set group id to first child pid
+            Setpgid(childPids[i], groupId);
         }    
+    }
+
+    // Parent closes pipes
+    for (int i = 0; i < numCmds - 1; i++) {
+        Close(pipes[i][READ_END]);
+        Close(pipes[i][WRITE_END]);
     }
 
     // Parent waits for kids
     for (int i = 0; i < numCmds; i++) {
         int status;
-        Waitpid(pid, &status, 0);
+        Waitpid(childPids[i], &status, 0);
     }
-
+    
     return;
 }
 
@@ -324,12 +345,12 @@ int builtin_cmd(char **argv)
     if (strcmp(argv[0], "quit") == 0)
         exit(EXIT_SUCCESS);
     if (strcmp(argv[0], "fg") == 0)
-        return 1;
+        return TRUE;
     if (strcmp(argv[0], "bg") == 0)
-        return 1;
+        return TRUE;
     if (strcmp(argv[0], "jobs") == 0)
-        return 1;
-    return 0;     /* not a builtin command */
+        return TRUE;
+    return FALSE;     /* not a builtin command */
 }
 
 /***********************
