@@ -112,57 +112,57 @@ void eval(char *cmdline)
     int bg = parseline(buf, argv);
 
     // Ignore empty lines
-    if (argv[0] == NULL) {
+    if (argv[0] == NULL)
         return;
-    }
 
     // If it's a built-in cmd
-    if (builtin_cmd(argv) != 0) {
-        if ((pid = fork()) == 0) {  // Run child code
-            if (execve(argv[0], argv, environ) < 0) {   // Throw error and stop child process if bad cmd
-                printf("%s: Command not found.\n", argv[0]);
-                exit(0);
-            }
-        }
+    if (builtin_cmd(argv) == 1) 
+        return;
 
-        if (!bg) {
-            int status;
-            if (waitpid(pid, &status, 0) < 0) {
-                unix_error("waitfg: waitpid error");
-            }
-        } else {
-            printf("%d %s", pid, cmdline);
+    // If a custom (not built-in) cmd, run this
+    if ((pid = fork()) == 0) {  // Run child code
+        if (execve(argv[0], argv, environ) < 0) {   // Throw error and stop child process if bad cmd
+            printf("%s: Command not found\n", argv[0]);
+            exit(0);
         }
-        // return;
     }
 
-    int cmds[MAXARGS];
-    int stdin_redir[MAXARGS];
-    int stdout_redir[MAXARGS];
+    if (!bg) {
+        int status;
+        if (waitpid(pid, &status, 0) < 0) {
+            unix_error("waitfg: waitpid error");
+        }
+    } else {
+        printf("%d %s", pid, cmdline);
+    }
 
-    int cmdsLen = parseargs(argv, cmds, stdin_redir, stdout_redir); 
+    // int cmds[MAXARGS];
+    // int stdin_redir[MAXARGS];
+    // int stdout_redir[MAXARGS];
+
+    // int cmdsLen = parseargs(argv, cmds, stdin_redir, stdout_redir); 
   
-    int cpid;   // Child pid
+    // int cpid;   // Child pid
 
 
-    for (int i = 0; i < cmdsLen; i++) {
-        // printf("cmds[i]:  %s\n", argv[cmds[i]]);
+    // for (int i = 0; i < cmdsLen; i++) {
+    //     // printf("cmds[i]:  %s\n", argv[cmds[i]]);
 
-        if ((pid = fork()) == 0) {  // Run child code
-            if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0) {   // Throw error and stop child process if bad cmd
-                printf("%s: Command not found.\n", argv[0]);
-                exit(0);
-            }
-        }
-        // fork
-            // child - exec
-            // parent - first cmd
-            if (i == 0) {
-                // save child's pid
-            } else {
-                // In parent, setpgid for children
-            }
-    }
+    //     if ((pid = fork()) == 0) {  // Run child code
+    //         if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0) {   // Throw error and stop child process if bad cmd
+    //             printf("%s: Command not found.\n", argv[0]);
+    //             exit(0);
+    //         }
+    //     }
+    //     // fork
+    //         // child - exec
+    //         // parent - first cmd
+    //         if (i == 0) {
+    //             // save child's pid
+    //         } else {
+    //             // In parent, setpgid for children
+    //         }
+    // }
 
     return;
 }
@@ -292,23 +292,14 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-    if (strcmp(argv[0], "quit") == 0) {
+    if (strcmp(argv[0], "quit") == 0)
         exit(EXIT_SUCCESS);
-    }
-    if (strcmp(argv[0], "fg") == 0) {
-        printf("fg\n");
+    if (strcmp(argv[0], "fg") == 0)
         return 1;
-    }
-    if (strcmp(argv[0], "bg") == 0) {
-        printf("bg\n");
+    if (strcmp(argv[0], "bg") == 0)
         return 1;
-    }
-    if (strcmp(argv[0], "jobs") == 0) {
-        printf("jobs\n");
-        // listjobs()
+    if (strcmp(argv[0], "jobs") == 0)
         return 1;
-    }
-
     return 0;     /* not a builtin command */
 }
 
