@@ -127,6 +127,7 @@ void eval(char *cmdline)
         }
     }
 
+    // Parent waits for foreground job to terminate
     if (!bg) {
         int status;
         if (waitpid(pid, &status, 0) < 0) {
