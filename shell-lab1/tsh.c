@@ -141,8 +141,6 @@ void eval(char *cmdline)
 
     // If a custom (not built-in) cmd, run this
     int numCmds = parseargs(argv, cmds, stdin_redir, stdout_redir); 
-    // STDIN_FILENO
-    // STDIN_FILENO
 
     // Make pipes (num of pipes is 1 less than numCmds - they go between cmds)
     for (int i = 0; i < numCmds - 1; i++) {
@@ -154,11 +152,22 @@ void eval(char *cmdline)
 
         // Child (for each cmd)
         if (pid == CHILD_PROCESS) {
+            
             // Redirect
+                // in file
+            if (stdin_redir[i] > 0) {
+                FILE *inFile = Fopen(argv[stdin_redir[i]], "r");
+                Dup2(fileno(inFile), STDIN_FILENO);
+                Fclose(inFile);
+            }
+                // out file
+            if (stdout_redir[i] > 0) {
+                FILE *outFile = Fopen(argv[stdout_redir[i]], "w");
+                Dup2(fileno(outFile), STDOUT_FILENO);
+                Fclose(outFile);
+            }
                 // in pipe
                 // out pipe
-                // in file
-                // out file
 
             // Close all pipes
             for (int i = 0; i < numCmds - 1; i++) {
