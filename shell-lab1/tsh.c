@@ -46,7 +46,6 @@ pid_t Fork(void);
 int Dup2(int fd1, int fd2);
 int Pipe(int* pipedes);
 void Execve(const char *filename, char *const argv[], char *const envp[]);
-void Execvp(const char *filename, char *const argv[]);
 pid_t Wait(int *status);
 pid_t Waitpid(pid_t pid, int *iptr, int options);
 FILE* Fopen(const char *filename, const char *mode);
@@ -160,7 +159,7 @@ void eval(char *cmdline)
                 // out pipe
                 // in file
                 // out file
-                
+
             // Close all pipes
             for (int i = 0; i < numCmds - 1; i++) {
                 Close(pipes[i][READ_END]);
@@ -391,12 +390,6 @@ int Pipe(int* pipedes) {
 void Execve(const char *filename, char *const argv[], char *const envp[]) 
 {
     if (execve(filename, argv, envp) < 0)
-	unix_error("Execve error");
-}
-
-void Execvp(const char *filename, char *const argv[]) 
-{
-    if (execvp(filename, argv) < 0)
 	unix_error("Execve error");
 }
 
