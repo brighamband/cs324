@@ -110,6 +110,7 @@ void eval(char *cmdline)
     int cmds[MAXARGS];
     int stdin_redir[MAXARGS];
     int stdout_redir[MAXARGS];
+    // int pipes[MAXARGS][2];  // Making max number of pipes, can also just juggle 2 pipes like pipes[2].  Make sure to initialize cmdsLen - 1 pipes
 
     strcpy(buf, cmdline);
     int bg = parseline(buf, argv);
