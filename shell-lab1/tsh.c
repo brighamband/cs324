@@ -107,6 +107,9 @@ void eval(char *cmdline)
     char *argv[MAXARGS];
     char buf[MAXLINE];
     pid_t pid;
+    int cmds[MAXARGS];
+    int stdin_redir[MAXARGS];
+    int stdout_redir[MAXARGS];
 
     strcpy(buf, cmdline);
     int bg = parseline(buf, argv);
@@ -120,28 +123,33 @@ void eval(char *cmdline)
         return;
 
     // If a custom (not built-in) cmd, run this
-    if ((pid = fork()) == 0) {  // Run child code
-        if (execve(argv[0], argv, environ) < 0) {   // Throw error and stop child process if bad cmd
-            printf("%s: Command not found\n", argv[0]);
-            exit(0);
+    int cmdsLen = parseargs(argv, cmds, stdin_redir, stdout_redir); 
+
+    for (int i = 0; i < cmdsLen; i++) {
+        if ((pid = fork()) == 0) {  // Run child code
+            if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0) {   // Throw error and stop child process if bad cmd
+                printf("%s: Command not found\n", argv[0]);
+                exit(0);
+            }
+        }
+
+        // Parent waits for foreground job to terminate
+        if (!bg) {
+            int status;
+            int cpid = waitpid(pid, &status, 0);
+            if (cpid < 0)
+                unix_error("waitfg: waitpid error");
+            if (i  == 0) {
+                // Save the child's pid
+            } else {
+                // Set group id of cur child to be pid of first command
+            }
+        } else {
+            printf("%d %s", pid, cmdline);
         }
     }
+    
 
-    // Parent waits for foreground job to terminate
-    if (!bg) {
-        int status;
-        if (waitpid(pid, &status, 0) < 0) {
-            unix_error("waitfg: waitpid error");
-        }
-    } else {
-        printf("%d %s", pid, cmdline);
-    }
-
-    // int cmds[MAXARGS];
-    // int stdin_redir[MAXARGS];
-    // int stdout_redir[MAXARGS];
-
-    // int cmdsLen = parseargs(argv, cmds, stdin_redir, stdout_redir); 
   
     // int cpid;   // Child pid
 
