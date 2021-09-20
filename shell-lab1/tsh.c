@@ -127,9 +127,9 @@ void eval(char *cmdline)
     int cmds[MAXARGS];
     int stdin_redir[MAXARGS];
     int stdout_redir[MAXARGS];
-    int childPids[MAXARGS];
+    pid_t childPids[MAXARGS];
     int pipes[MAXARGS][2];  // Making max number of pipes, can also just juggle 2 pipes like pipes[2].  Make sure to initialize numCmds - 1 pipes
-    int groupId;
+    pid_t groupId;
 
     parseline(cmdline, argv); 
 
