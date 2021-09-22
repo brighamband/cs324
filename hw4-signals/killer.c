@@ -43,7 +43,14 @@ int main(int argc, char *argv[]) {
 		kill(pid, SIGTERM);	// Prints foo (6)
 		break;
 	case '7':
+		// kill(pid, SIGSYS);
+		kill(pid, SIGINT);
+		// kill(pid, SIGUSR2);
 		kill(pid, SIGQUIT);
+		// kill(pid, SIGSTKFLT);
+		// sleep(2);
+		// kill(pid, SIGSTKFLT);
+		sleep(6);
 		break;
 
 	}
