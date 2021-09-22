@@ -34,6 +34,12 @@ int main(int argc, char *argv[]) {
 		kill(pid, SIGSTKFLT);
 		break;
 	case '6':
+		kill(pid, SIGHUP);
+		sleep(6);
+		kill(pid, SIGUSR1);
+		sleep(4);
+		kill(pid, SIGPWR);
+		kill(pid, SIGTERM);
 		break;
 	case '7':
 		// kill(pid, SIGINT);
