@@ -9,16 +9,16 @@ int main(int argc, char *argv[]) {
 
 	switch (scenario[0]) {
 	case '1':
-		break;
+		break;	// No output
 	case '2':
-		kill(pid, SIGHUP);
-		sleep(6);
+		kill(pid, SIGHUP);	// Outputs 1 and 2
+		sleep(6);		// Gives time for both 1 and 2 to output before exiting
 		break;
 	case '3':
-		kill(pid, SIGHUP);
-		sleep(6);
-		kill(pid, SIGHUP);
-		sleep(6);
+		kill(pid, SIGHUP);	// Outputs 1 and 2
+		sleep(6);		// Lets them finish outputting
+		kill(pid, SIGHUP);	// Outputs 1 and 2 again (can reuse the same signal since the first one has finished processing)
+		sleep(6);		// Lets them finish outputting
 		break;
 	case '4':
 		kill(pid, SIGHUP);
