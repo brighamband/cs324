@@ -38,20 +38,20 @@ void sig_handler4(int signum) {
 	}
 }
 
-// Invoke with 10 (SIGUSER1)
+// Invoke with 10 (SIGUSR1)
 void sig_handler5(int signum) {
 	foo = fork();
 	if (foo == 0) {
-		exit(7);
+		exit(7);		// Prints a 7
 	}
 }
 
 // Invoke with 16 (SIGSTKFLT)
 void sig_handler6(int signum) {
 	int pid, status;
-	pid = waitpid(-1, &status, WNOHANG);
+	pid = waitpid(-1, &status, WNOHANG);	// WNOHANG means return immediately, don't wait
 	if (pid < 0) {
-		printf("%d\n", errno);
+		printf("%d\n", errno);	// If it returns a 10, means no child processes
 	}
 }
 

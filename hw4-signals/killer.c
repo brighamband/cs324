@@ -27,10 +27,18 @@ int main(int argc, char *argv[]) {
 		sleep(6);
 		break;
 	case '5':
+		kill(pid, SIGHUP);
+		sleep(6);
+		kill(pid, SIGUSR1);
+		sleep(5);
+		kill(pid, SIGSTKFLT);
 		break;
 	case '6':
 		break;
 	case '7':
+		// kill(pid, SIGINT);
+		// kill(pid, SIGQUIT);
+		// sleep(8);
 		break;
 
 	}
