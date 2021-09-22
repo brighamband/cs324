@@ -11,9 +11,8 @@ int main(int argc, char *argv[]) {
 	case '1':
 		break;
 	case '2':
-		// sleep(3);
 		kill(pid, SIGHUP);
-		// sleep(3);
+		sleep(6);
 		break;
 	case '3':
 		break;
