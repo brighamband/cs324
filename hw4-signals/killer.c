@@ -38,19 +38,12 @@ int main(int argc, char *argv[]) {
 		sleep(6);
 		kill(pid, SIGSYS);
 		kill(pid, SIGUSR1);
-		sleep(4);
+		sleep(2);
 		kill(pid, SIGPWR);
 		kill(pid, SIGTERM);
 		break;
 	case '7':
-		// kill(pid, SIGSYS);
-		kill(pid, SIGUSR1);
-		kill(pid, SIGSYS);
-		kill(pid, SIGCHLD);
-		sleep(3);
-		// kill(pid, SIGINT);
-		// kill(pid, SIGQUIT);
-		// sleep(8);
+		kill(pid, SIGQUIT);
 		break;
 
 	}
