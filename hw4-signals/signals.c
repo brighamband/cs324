@@ -64,7 +64,7 @@ void sig_handler7(int signum) {
 	}
 }
 
-// Invoke with 12 (SIGUSER2)
+// Invoke with 12 (SIGUSR2)
 void sig_handler8(int signum) {
 	struct sigaction sigact;
 
