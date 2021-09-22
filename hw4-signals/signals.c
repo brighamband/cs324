@@ -42,7 +42,7 @@ void sig_handler4(int signum) {
 void sig_handler5(int signum) {
 	foo = fork();
 	if (foo == 0) {
-		exit(7);		// Prints a 7
+		exit(7);		// Prints a 7 if not blocked?
 	}
 }
 
