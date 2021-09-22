@@ -21,9 +21,10 @@ int main(int argc, char *argv[]) {
 		sleep(6);
 		break;
 	case '4':
-		// kill(pid, SIGHUP);
-		// kill(pid, SIGINT);
-		// sleep(12);
+		kill(pid, SIGHUP);
+		sleep(2);
+		kill(pid, SIGINT);
+		sleep(6);
 		break;
 	case '5':
 		break;
