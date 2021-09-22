@@ -21,10 +21,10 @@ int main(int argc, char *argv[]) {
 		sleep(6);		// Lets them finish outputting
 		break;
 	case '4':
-		kill(pid, SIGHUP);
-		sleep(2);
-		kill(pid, SIGINT);
-		sleep(6);
+		kill(pid, SIGHUP);	// Starts outputting 1 and 2
+		sleep(2);		// Gives time for 1 to output from previous signal
+		kill(pid, SIGINT);	// Starts outputting 1 and 2
+		sleep(6);		// Before exiting, the 2 from the first signal prints as well as the 2 from the last signal
 		break;
 	case '5':
 		kill(pid, SIGHUP);
