@@ -15,6 +15,9 @@ int main(int argc, char *argv[]) {
 		sleep(6);
 		break;
 	case '3':
+		kill(pid, SIGHUP);
+		kill(pid, SIGINT);
+		sleep(12);
 		break;
 	case '4':
 		break;
