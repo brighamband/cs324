@@ -43,16 +43,12 @@ int main(int argc, char *argv[]) {
 		kill(pid, SIGTERM);	// Prints foo (6)
 		break;
 	case '7':
-		// kill(pid, SIGSYS);
-		kill(pid, SIGINT);
-		// kill(pid, SIGUSR2);
-		kill(pid, SIGQUIT);
-		sleep(5);
-		kill(pid, SIGSYS);
-		kill(pid, SIGCHLD);
-		// sleep(2);
-		// kill(pid, SIGSTKFLT);
-		sleep(6);
+		kill(pid, SIGSYS);	// Blocks the SIGINT signal that would've outputted 1 and 2
+		sleep(1);		// Give time for block to be set before running next kill signal
+		kill(pid, SIGQUIT);	// Outputs 8 and 9 (call to SIGINT doesn't go through immediately BC of block)
+		sleep(5);		// Gives time to output 8 and 9 since they sleep
+		kill(pid, SIGSYS);		// Unblock the SIGINT signal (now 1 and 2 will output)
+		sleep(5);		// Gives time to output 1 and 2 since they sleep
 		break;
 
 	}
