@@ -35,10 +35,10 @@ int main(int argc, char *argv[]) {
 		break;
 	case '6':
 		kill(pid, SIGHUP);	// Outputs 1 and 2
-		sleep(6);
+		sleep(5);		// Gives time for them to completely finish
 		kill(pid, SIGSYS);	// Silences the 7 child output
 		kill(pid, SIGUSR1);	// Makes foo > 0
-		sleep(2);
+		sleep(1);		// Gives time for foo to update before proceeding
 		kill(pid, SIGPWR);	// Sets foo = 6 (since it's > 0)
 		kill(pid, SIGTERM);	// Prints foo (6)
 		break;
