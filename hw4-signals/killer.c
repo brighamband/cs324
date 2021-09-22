@@ -48,3 +48,41 @@ int main(int argc, char *argv[]) {
 
 	}
 }
+
+/*
+Scenario 1
+(No output)
+
+Scenario 2
+1
+2
+
+Scenario 3
+1
+2
+1
+2
+
+Scenario 4
+1
+1
+2
+2
+
+Scenario 5
+1
+2
+7
+10
+
+Scenario 6
+1
+2
+6
+
+Scenario 7
+8
+9
+1
+2
+*/
