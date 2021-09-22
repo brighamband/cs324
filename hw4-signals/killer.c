@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 	case '6':
 		kill(pid, SIGHUP);	// Outputs 1 and 2
 		sleep(5);		// Gives time for them to completely finish
-		kill(pid, SIGSYS);	// Silences the 7 child output
+		kill(pid, SIGSYS);	// Blocks the 7 child output
 		kill(pid, SIGUSR1);	// Makes foo > 0
 		sleep(1);		// Gives time for foo to update before proceeding
 		kill(pid, SIGPWR);	// Sets foo = 6 (since it's > 0)
@@ -47,7 +47,9 @@ int main(int argc, char *argv[]) {
 		kill(pid, SIGINT);
 		// kill(pid, SIGUSR2);
 		kill(pid, SIGQUIT);
-		// kill(pid, SIGSTKFLT);
+		sleep(5);
+		kill(pid, SIGSYS);
+		kill(pid, SIGCHLD);
 		// sleep(2);
 		// kill(pid, SIGSTKFLT);
 		sleep(6);
