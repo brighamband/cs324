@@ -11,12 +11,14 @@
 int foo;
 int block;
 
+// Invoke with SIGHUP, SIGINT
 void sig_handler1(int signum) {
 	printf("1\n");
 	sleep(4);
 	printf("2\n");
 }
 
+// Invoke with SIGQUIT
 void sig_handler2(int signum) {
 	printf("8\n");
 	kill(getpid(), SIGINT);
@@ -24,16 +26,19 @@ void sig_handler2(int signum) {
 	printf("9\n");
 }
 
+// Invoke with SIGTERM
 void sig_handler3(int signum) {
 	printf("%d\n", foo);
 }
 
+// Invoke with 30 (SIGPWR)
 void sig_handler4(int signum) {
 	if (foo > 0) {
 		foo = 6;
 	}
 }
 
+// Invoke with 10 (SIGUSER1)
 void sig_handler5(int signum) {
 	foo = fork();
 	if (foo == 0) {
@@ -41,6 +46,7 @@ void sig_handler5(int signum) {
 	}
 }
 
+// Invoke with 16 (SIGSTKFLT)
 void sig_handler6(int signum) {
 	int pid, status;
 	pid = waitpid(-1, &status, WNOHANG);
@@ -49,6 +55,7 @@ void sig_handler6(int signum) {
 	}
 }
 
+// Invoke with 31 (SIGSYS)
 void sig_handler7(int signum) {
 	if (block) {
 		block = 0;
@@ -57,6 +64,7 @@ void sig_handler7(int signum) {
 	}
 }
 
+// Invoke with 12 (SIGUSER2)
 void sig_handler8(int signum) {
 	struct sigaction sigact;
 
@@ -65,6 +73,7 @@ void sig_handler8(int signum) {
 	sigaction(SIGTERM, &sigact, NULL);
 }
 
+// Invoke with SIGCHLD
 void sig_handler9(int signum) {
 	int status;
 	waitpid(-1, &status, 0);
