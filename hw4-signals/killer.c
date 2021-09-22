@@ -16,10 +16,14 @@ int main(int argc, char *argv[]) {
 		break;
 	case '3':
 		kill(pid, SIGHUP);
-		kill(pid, SIGINT);
-		sleep(12);
+		sleep(6);
+		kill(pid, SIGHUP);
+		sleep(6);
 		break;
 	case '4':
+		// kill(pid, SIGHUP);
+		// kill(pid, SIGINT);
+		// sleep(12);
 		break;
 	case '5':
 		break;
