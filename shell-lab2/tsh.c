@@ -410,8 +410,10 @@ int builtin_cmd(char **argv)
         return TRUE;
     if (strcmp(argv[0], "bg") == 0)
         return TRUE;
-    if (strcmp(argv[0], "jobs") == 0)
+    if (strcmp(argv[0], "jobs") == 0) {
+        listjobs(jobs);
         return TRUE;
+    }
     return FALSE;     /* not a builtin command */
 }
 
