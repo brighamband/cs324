@@ -261,7 +261,13 @@ void eval(char *cmdline)
             childPids[i] = pid; // Save child pid
 
             groupId = childPids[0]; // Set group id to first child pid
-            Setpgid(childPids[i], groupId);
+            Setpgid(childPids[i], groupId); // Set pgpid of each child to its parent's pid
+            // Adds job, depending if it's fg or bg
+            if (bg == True) {   // bg job
+
+            } else {    // fg job
+                addjob(jobs, childPids[i], groupId, ?, cmdline);
+            }
         }    
     }
 
