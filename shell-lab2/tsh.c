@@ -194,6 +194,8 @@ void eval(char *cmdline)
 
     // Child
     if (cpid == CHILD_PROCESS) {
+        setpgid(0, 0);  // Ensure shell will be your only process in fg group
+
         if (execve(argv[0], argv, environ) < 0) {   // Execute cmd
             printf("%s Command not found\n", argv[0]);
             exit(EXIT_SUCCESS);
@@ -397,7 +399,7 @@ void sigchld_handler(int sig)
     int status;
     int pid;
     // Reaps any child (-1) - returns immediately instead of block (WNOHANG) and reaps stopped processes (WUNTRACED)
-    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) >= 0) {
+    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
         deletejob(jobs, pid);
     }
     return;
