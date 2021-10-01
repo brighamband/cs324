@@ -94,7 +94,6 @@ handler_t *Signal(int signum, handler_t *handler);
 
 /* EXTRA WRAPPER FUNCTIONS FOR SYSTEM CALLS - See bottom of file for function bodies */
 pid_t Fork(void);
-pid_t Waitpid(pid_t pid, int *iptr, int options);
 void Setpgid(pid_t pid, pid_t pgid);
 
 /*
@@ -195,28 +194,29 @@ void eval(char *cmdline)
 
     // Child
     if (cpid == CHILD_PROCESS) {
-        // Execute cmd
-        if (execve(argv[0], argv, environ) < 0) {
+        if (execve(argv[0], argv, environ) < 0) {   // Execute cmd
             printf("%s Command not found\n", argv[0]);
             exit(EXIT_SUCCESS);
         }
     }
 
     // Parent
-    if (cpid != CHILD_PROCESS) {
-        Setpgid(cpid, groupId);
+    // if (cpid != CHILD_PROCESS) {
+    Setpgid(cpid, groupId);
 
-        // Fg
-        if (bg == FALSE) {
-            addjob(jobs, cpid, groupId, FG, cmdline);
-        } else {    // Bg
-            addjob(jobs, cpid, groupId, BG, cmdline);
-        }
+    // Fg
+    if (bg == FALSE) {
+        addjob(jobs, cpid, groupId, FG, cmdline);
+    } else {    // Bg
+        addjob(jobs, cpid, groupId, BG, cmdline);
+        // Add extra print statement to bg job
+        printf("[%d] (%d) %s", pid2jid(cpid), cpid, cmdline);
+    }
 
-        // unblock processes
+    // unblock processes
 
-        // wait on pid
-    }    
+    // Parent waits on child
+    waitfg(cpid);
 
     return;
 }
@@ -375,6 +375,9 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    while (fgpid(jobs) == pid) {
+        sleep(1);
+    }
     return;
 }
 
@@ -391,6 +394,12 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+    int status;
+    int pid;
+    // Reaps any child (-1) - returns immediately instead of block (WNOHANG) and reaps stopped processes (WUNTRACED)
+    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) >= 0) {
+        deletejob(jobs, pid);
+    }
     return;
 }
 
@@ -650,15 +659,6 @@ pid_t Fork(void)
     if ((pid = fork()) < 0)
 	    unix_error("Fork error");
     return pid;
-}
-
-pid_t Waitpid(pid_t pid, int *iptr, int options) 
-{
-    pid_t retpid;
-
-    if ((retpid  = waitpid(pid, iptr, options)) < 0) 
-	    unix_error("Waitpid error");
-    return(retpid);
 }
 
 void Setpgid(pid_t pid, pid_t pgid) {
