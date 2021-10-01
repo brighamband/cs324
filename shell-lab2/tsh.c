@@ -397,7 +397,7 @@ void waitfg(pid_t pid)
 void sigchld_handler(int sig) 
 {
     int status;
-    int pid;
+    pid_t pid;
     // Reaps any child (-1) - returns immediately instead of block (WNOHANG) and reaps stopped processes (WUNTRACED)
     while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
         deletejob(jobs, pid);
@@ -412,6 +412,10 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+    pid_t pid = fgpid(jobs);
+    kill(-1 * pid, SIGINT);
+    int jid = pid2jid(pid);
+    printf("Job [%d] (%d) terminated by signal %d", jid, pid, SIGINT);
     return;
 }
 
@@ -422,6 +426,8 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+    pid_t pid = fgpid(jobs);
+    kill(-1 * pid, SIGTSTP);
     return;
 }
 
