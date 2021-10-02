@@ -201,7 +201,7 @@ void eval(char *cmdline)
     // Child
     if (cpid == CHILD_PROCESS) {
         sigprocmask(SIG_UNBLOCK, &mask, NULL);    // Unblock SIGCHLD in child
-        setpgid(0, 0);  // Ensure shell will be your only process in fg group
+        Setpgid(0, 0);  // Ensure shell will be your only process in fg group
 
         if (execve(argv[0], argv, environ) < 0) {   // Execute cmd
             printf("%s: Command not found\n", argv[0]);
@@ -478,10 +478,10 @@ void sigchld_handler(int sig)
             job->state = ST;    // Set job state to stopped
 
             int jid = pid2jid(pid);
-            printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, WSTOPSIG(status));
+            printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, WSTOPSIG(status)); // If status of WIFSTOPPED is true (child got stopped), returns signal number which caused it.
         } else if (WIFSIGNALED(status)) {   // Child prematurely terminated by signal
             int jid = pid2jid(pid);
-            printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, WTERMSIG(status));
+            printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, WTERMSIG(status));  // If status of WIFSIGNALED is true (child got terminated), returns signal number which caused it.
             deletejob(jobs, pid);
         } else if (WIFEXITED(status)) {     // Child terminated after finishing
             deletejob(jobs, pid);
