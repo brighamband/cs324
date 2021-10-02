@@ -403,7 +403,8 @@ void sigchld_handler(int sig)
         if (WIFSTOPPED(status)) {   // Child stopped
             struct job_t *job = getjobpid(jobs, pid);
             job->state = ST;
-            printf("wifistopped, child stopped");
+            int jid = pid2jid(pid);
+            printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, SIGTSTP);
         } else if (WIFSIGNALED(status)) {   // Child prematurely terminated by signal
             deletejob(jobs, pid);
             // printf("wifsignaled, child terminated by signal");
