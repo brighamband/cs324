@@ -204,7 +204,7 @@ void eval(char *cmdline)
         setpgid(0, 0);  // Ensure shell will be your only process in fg group
 
         if (execve(argv[0], argv, environ) < 0) {   // Execute cmd
-            printf("%s Command not found\n", argv[0]);
+            printf("%s: Command not found\n", argv[0]);
             exit(EXIT_FAILURE);
         }
     }
@@ -375,6 +375,73 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+    char* cmdPt2 = argv[1];
+    int jid = 0;
+    pid_t pid = 0;
+    struct job_t *job;
+
+    if (cmdPt2 == NULL) {
+        printf("%s command requires PID or %%job id argument\n", argv[0]);
+        return;
+    }
+    
+    // JID
+    if (cmdPt2[0] == '%') {
+        jid = atoi(&cmdPt2[1]);
+        job = getjobjid(jobs, jid);
+
+        if (job == NULL) {
+            printf("%s: No such job\n", cmdPt2);
+            return;
+        }
+
+        pid = job->pid;
+        
+
+        if (strcmp(argv[0], "fg") == 0) {
+            job->state = FG;
+        }
+
+        if (strcmp(argv[0], "bg") == 0) {
+            job->state = BG;
+            printf("[%d] (%d) %s", jid, pid, job->cmdline);
+        }
+
+        kill(-1 * pid, SIGCONT);
+
+        if (strcmp(argv[0], "fg") == 0) {
+            waitfg(job->pid);
+        }
+
+        return;
+    }
+
+    if (!isdigit(cmdPt2[1])) {
+        printf("%s: argument must be a PID or %%job id\n", argv[0]);
+        return;
+    }
+
+    // PID
+    pid = atoi(cmdPt2);
+    job = getjobpid(jobs, pid);
+
+    if (job == NULL) {
+        printf("(%d): No such process\n", pid);
+        return;
+    }
+    
+    kill(-1 * pid, SIGCONT);
+
+    if (strcmp(argv[0], "fg") == 0) {
+        job->state = FG;
+        waitfg(job->pid);
+    }
+
+    if (strcmp(argv[0], "bg") == 0) {
+        job->state = BG;
+        printf("[%d] (%d) %s", job->jid, pid, job->cmdline);
+    }  
+
     return;
 }
 
@@ -413,8 +480,9 @@ void sigchld_handler(int sig)
             int jid = pid2jid(pid);
             printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, SIGTSTP);
         } else if (WIFSIGNALED(status)) {   // Child prematurely terminated by signal
+            struct job_t *job = getjobpid(jobs, pid);
+            printf("Job [%d] (%d) terminated by signal %d\n", job->jid, pid, WTERMSIG(status));
             deletejob(jobs, pid);
-            // printf("wifsignaled, child terminated by signal");
         } else if (WIFEXITED(status)) {     // Child terminated after finishing
             deletejob(jobs, pid);
             // printf("wifexited, child finished and terminated successfully");
@@ -426,7 +494,7 @@ void sigchld_handler(int sig)
 /* 
  * sigint_handler - The kernel sends a SIGINT to the shell whenver the
  *    user types ctrl-c at the keyboard.  Catch it and send it along
- *    to the foreground job.  
+ *    to the foreground job.
  */
 void sigint_handler(int sig) 
 {
