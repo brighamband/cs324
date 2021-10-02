@@ -475,17 +475,16 @@ void sigchld_handler(int sig)
     while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
         if (WIFSTOPPED(status)) {   // Child stopped
             struct job_t *job = getjobpid(jobs, pid);
-            job->state = ST;
+            job->state = ST;    // Set job state to stopped
 
             int jid = pid2jid(pid);
-            printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, SIGTSTP);
+            printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, WSTOPSIG(status));
         } else if (WIFSIGNALED(status)) {   // Child prematurely terminated by signal
-            struct job_t *job = getjobpid(jobs, pid);
-            printf("Job [%d] (%d) terminated by signal %d\n", job->jid, pid, WTERMSIG(status));
+            int jid = pid2jid(pid);
+            printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, WTERMSIG(status));
             deletejob(jobs, pid);
         } else if (WIFEXITED(status)) {     // Child terminated after finishing
             deletejob(jobs, pid);
-            // printf("wifexited, child finished and terminated successfully");
         }
     }
     return;
@@ -499,10 +498,11 @@ void sigchld_handler(int sig)
 void sigint_handler(int sig) 
 {
     pid_t pid = fgpid(jobs);
-    kill(-1 * pid, SIGINT);
 
-    int jid = pid2jid(pid);
-    printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, SIGINT);
+    // Send an interrupt signal if there's a pid for the job
+    if (pid != 0) {     
+        kill(-1 * pid, SIGINT);
+    }
     return;
 }
 
@@ -514,7 +514,11 @@ void sigint_handler(int sig)
 void sigtstp_handler(int sig) 
 {
     pid_t pid = fgpid(jobs);
-    kill(-1 * pid, SIGTSTP);
+
+    // Send a stop signal if there's a pid for the job
+    if (pid != 0) {     
+        kill(-1 * pid, SIGTSTP);
+    }
     return;
 }
 
