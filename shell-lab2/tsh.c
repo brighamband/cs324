@@ -400,7 +400,17 @@ void sigchld_handler(int sig)
     pid_t pid;
     // Reaps any child (-1) - returns immediately instead of block (WNOHANG) and reaps stopped processes (WUNTRACED)
     while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
-        deletejob(jobs, pid);
+        if (WIFSTOPPED(status)) {   // Child stopped
+            struct job_t *job = getjobpid(jobs, pid);
+            job->state = ST;
+            printf("wifistopped, child stopped");
+        } else if (WIFSIGNALED(status)) {   // Child prematurely terminated by signal
+            deletejob(jobs, pid);
+            // printf("wifsignaled, child terminated by signal");
+        } else if (WIFEXITED(status)) {     // Child terminated after finishing
+            deletejob(jobs, pid);
+            // printf("wifexited, child finished and terminated successfully");
+        }
     }
     return;
 }
@@ -415,7 +425,7 @@ void sigint_handler(int sig)
     pid_t pid = fgpid(jobs);
     kill(-1 * pid, SIGINT);
     int jid = pid2jid(pid);
-    printf("Job [%d] (%d) terminated by signal %d", jid, pid, SIGINT);
+    printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, SIGINT);
     return;
 }
 
