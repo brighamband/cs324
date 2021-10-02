@@ -410,7 +410,7 @@ void do_bgfg(char **argv)
         kill(-1 * pid, SIGCONT);
 
         if (strcmp(argv[0], "fg") == 0) {
-            waitfg(job->pid);
+            waitfg(job->pid);   // Ensures that only 1 job is running in fg at a time
         }
 
         return;
@@ -434,7 +434,7 @@ void do_bgfg(char **argv)
 
     if (strcmp(argv[0], "fg") == 0) {
         job->state = FG;
-        waitfg(job->pid);
+        waitfg(job->pid);   // Ensures that only 1 job is running in fg at a time
     }
 
     if (strcmp(argv[0], "bg") == 0) {
