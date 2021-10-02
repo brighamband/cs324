@@ -179,6 +179,7 @@ void eval(char *cmdline)
     char *argv[MAXARGS];    // argv[0] is the command
     pid_t cpid = 0;  // Child process id
     pid_t groupId = 0;    // Process group id
+    sigset_t mask;
 
     int bg = parseline(cmdline, argv); 
 
@@ -190,32 +191,37 @@ void eval(char *cmdline)
     if (builtin_cmd(argv) == 1) 
         return;
 
+    // Block SIGCHLD before fork
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &mask, NULL);
+
     cpid = Fork();
 
     // Child
     if (cpid == CHILD_PROCESS) {
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);    // Unblock SIGCHLD in child
         setpgid(0, 0);  // Ensure shell will be your only process in fg group
 
         if (execve(argv[0], argv, environ) < 0) {   // Execute cmd
             printf("%s Command not found\n", argv[0]);
-            exit(EXIT_SUCCESS);
+            exit(EXIT_FAILURE);
         }
     }
 
     // Parent
-    // if (cpid != CHILD_PROCESS) {
     Setpgid(cpid, groupId);
 
     // Fg
     if (bg == FALSE) {
         addjob(jobs, cpid, groupId, FG, cmdline);
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);    // Unblock SIGCHLD in parent
     } else {    // Bg
         addjob(jobs, cpid, groupId, BG, cmdline);
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);    // Unblock SIGCHLD in parent
         // Add extra print statement to bg job
         printf("[%d] (%d) %s", pid2jid(cpid), cpid, cmdline);
     }
-
-    // unblock processes
 
     // Parent waits on child
     waitfg(cpid);
@@ -403,7 +409,7 @@ void sigchld_handler(int sig)
         if (WIFSTOPPED(status)) {   // Child stopped
             struct job_t *job = getjobpid(jobs, pid);
             job->state = ST;
-            
+
             int jid = pid2jid(pid);
             printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, SIGTSTP);
         } else if (WIFSIGNALED(status)) {   // Child prematurely terminated by signal
