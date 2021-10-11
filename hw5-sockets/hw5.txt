@@ -1,6 +1,7 @@
 1)
       a)  Technically getaddrinfo() is essential in setup as well, but socket() and connect() are the 2 main system calls used to prep the socket.
       b)  cry???????????????
+            can you use getsockopt() and setsockopt() instead?  To still connect, but just not using connect()?
 2)        ./server 2000
 3)        
       a)  cmd:    ss -l -u -p -n "sport = :2000"
