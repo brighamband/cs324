@@ -1,1 +1,20 @@
-1.      
+1)
+      a)  getaddrinfo() and socket()
+      b)  cry???????????????
+2)        ./server 2000
+3)        
+      a)  cmd:    ss -l -u -p -n "sport = :2000"
+      b)  out:    State    Recv-Q   Send-Q     Local Address:Port      Peer Address:Port   Process
+                  UNCONN   0        0                0.0.0.0:2000           0.0.0.0:*       users:(("server",pid=2103343,fd=3))
+      c)  exp:    It's showing that it's showing a list of services listening from port 2000.  In our case it's just the one service running that we started when we ran the server file.  It gives the state, then tells us how much data is in the queue for the socket waiting to be read or sent.  It then has more port info.
+4)
+      a)  client cmd:   ./client -4 philippines 2000 foo bar baz catvideo
+      b)  client out:   Sent 4 bytes to server
+                        Received 4 bytes: foo
+                        Sent 4 bytes to server
+                        Received 4 bytes: bar
+                        Sent 4 bytes to server
+                        Received 4 bytes: baz
+                        Sent 9 bytes to server
+                        Received 9 bytes: catvideo
+5)    
