@@ -1,6 +1,6 @@
 1)
       a)  Technically getaddrinfo() is essential in setup as well, but socket() and connect() are the 2 main system calls used to prep the socket.
-      b)  cry???????????????
+      b)  FIXME ???
             can you use getsockopt() and setsockopt() instead?  To still connect, but just not using connect()?
 2)        ./server 2000
 3)        
@@ -18,4 +18,7 @@
                         Received 4 bytes: baz
                         Sent 9 bytes to server
                         Received 9 bytes: catvideo
-5)    
+5)    a)    4 write calls are made.
+      b)    FIXME ???
+      c)    FIXME ???
+      d)    FIXME ???
