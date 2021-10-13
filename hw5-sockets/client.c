@@ -44,9 +44,9 @@ int main(int argc, char *argv[]) {
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = af;    /* Allow IPv4, IPv6, or both, depending on
 				    what was specified on the command line. */
-	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
+	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = 0;
-	hints.ai_protocol = 0;          /* Any protocol */
+	hints.ai_protocol = IPPROTO_TCP;          /* Any protocol */
 
 	s = getaddrinfo(argv[hostindex], argv[hostindex + 1], &hints, &result);
 	if (s != 0) {

@@ -48,11 +48,11 @@ int main(int argc, char *argv[]) {
 	 * in hints, depending on what is passed on on the command line.
 	 */
 	hints.ai_family = af;           /* Choose IPv4 or IPv6 */
-	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
+	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;    /* Wildcard IP address - i.e., listen
 					   on *all* IPv4 or *all* IPv6
 					   addresses */
-	hints.ai_protocol = 0;          /* Any protocol */
+	hints.ai_protocol = IPPROTO_TCP;          /* Any protocol */
 	hints.ai_canonname = NULL;
 	hints.ai_addr = NULL;
 	hints.ai_next = NULL;
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	if ((sfd = socket(af, SOCK_DGRAM, 0)) < 0) {
+	if ((sfd = socket(af, SOCK_STREAM, 0)) < 0) {
 		perror("Error creating socket");
 		exit(EXIT_FAILURE);
 	}
@@ -82,11 +82,16 @@ int main(int argc, char *argv[]) {
 
 	printf("Waiting for data on port %s...\n", argv[portindex]);
 
+	listen(sfd, 100);
+	peer_addr_len = sizeof(struct sockaddr_storage);
+	sfd = accept(sfd, (struct sockaddr *) &peer_addr, &peer_addr_len);
+
 	/* Read datagrams and echo them back to sender */
 	for (;;) {
-		peer_addr_len = sizeof(struct sockaddr_storage);
-		nread = recvfrom(sfd, buf, BUF_SIZE, 0,
-				(struct sockaddr *) &peer_addr, &peer_addr_len);
+		// peer_addr_len = sizeof(struct sockaddr_storage);	// MOVED UP
+		
+		nread = recv(sfd, buf, BUF_SIZE, 0);
+		if (nread == 0) break;
 		sleep(2);
 
 		if (nread == -1)
@@ -101,10 +106,8 @@ int main(int argc, char *argv[]) {
 				       nread, host, service);
 		else
 		       fprintf(stderr, "getnameinfo: %s\n", gai_strerror(s));
-
-		if (sendto(sfd, buf, nread, 0,
-					(struct sockaddr *) &peer_addr,
-					peer_addr_len) != nread)
+		
+		if (send(sfd, buf, nread, 0) != nread)
 			perror("Error sending response");
 	}
 }
