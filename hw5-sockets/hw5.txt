@@ -1,6 +1,6 @@
 1)
       a)  Technically getaddrinfo() is essential in setup as well, but socket() and connect() are the 2 main system calls used to prep the socket.
-      b)  FIXME ???
+      b)  Without using a connect call, you could still have it work by using sendto() or sendmsg(), where you will just have to specify the destination since you aren't already connected to a socket.
             can you use getsockopt() and setsockopt() instead?  To still connect, but just not using connect()?
 2)        ./server 2000
 3)        
