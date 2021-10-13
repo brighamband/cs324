@@ -22,5 +22,5 @@
       a)    4 write calls are made.
       b)    Just 1 datagram has been received (all receive operations return only 1 packet)
       c)    4 total calls are required (only 1 datagram can go through each call, so with 4 datagrams it will take 4 calls)
-      d)    The cause of the inefficiency is that UDP is connectionless, so every time you want to send a datagram, you have to essentially temporarily reconnect to your destination again.
+      d)    The cause of the inefficiency is that with UDP, it keeps datagrams in individual packets, so instead of receiving all the data at once, it has to receive each datagram one by one, which is less efficient.  Also, another inefficiency is that UDP is connectionless, so every time you want to send a datagram, you have to essentially temporarily reconnect to your destination again.
 6)
