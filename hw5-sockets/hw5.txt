@@ -18,7 +18,9 @@
                         Received 4 bytes: baz
                         Sent 9 bytes to server
                         Received 9 bytes: catvideo
-5)    a)    4 write calls are made.
-      b)    4 datagrams have been received (1 for each write call from the client).
-      c)    FIXME ???
-      d)    FIXME ???
+5)
+      a)    4 write calls are made.
+      b)    Just 1 datagram has been received (all receive operations return only 1 packet)
+      c)    4 total calls are required (only 1 datagram can go through each call, so with 4 datagrams it will take 4 calls)
+      d)    The cause of the inefficiency is that UDP is connectionless, so every time you want to send a datagram, you have to essentially temporarily reconnect to your destination again.
+6)
