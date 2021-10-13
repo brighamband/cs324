@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
 		peer_addr_len = sizeof(struct sockaddr_storage);
 		nread = recvfrom(sfd, buf, BUF_SIZE, 0,
 				(struct sockaddr *) &peer_addr, &peer_addr_len);
+		sleep(2);
 
 		if (nread == -1)
 			continue;               /* Ignore failed request */
