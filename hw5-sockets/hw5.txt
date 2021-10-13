@@ -19,6 +19,6 @@
                         Sent 9 bytes to server
                         Received 9 bytes: catvideo
 5)    a)    4 write calls are made.
-      b)    FIXME ???
+      b)    4 datagrams have been received (1 for each write call from the client).
       c)    FIXME ???
       d)    FIXME ???
