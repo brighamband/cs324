@@ -28,4 +28,6 @@ PART 1
 
 PART 2
 
-6)
+6)    The role of the original socket changes because before it would just read each datagram, but now it keeps reading from the stream until it hits end of file.
+7)    Before with UDP, connect in the client just basically set a destination to send to, but nothing would happen until the data was sent.  With the TCP version, connect actually performs the 3-way handshake beforehand, before actually sending any data.
+8)    
