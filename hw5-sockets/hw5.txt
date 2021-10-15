@@ -81,9 +81,9 @@ PART 3
 PART 4
 
 16)
-      /
+      If no datagrams/bytes are available at the client socket, it will wait (waits for message to arrive, unless it's non-blocking).
 17)
-      /
+      
 18)
       /
 19)
