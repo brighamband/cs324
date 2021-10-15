@@ -50,9 +50,10 @@ PART 2
                         Sent 9 bytes to server
                         Received 9 bytes: catvideo
 10)
-      a)    cmd:        /
-      b)    out:        /
-      c)    exp:        /
+      a)    cmd:        ss -t -p -n "sport = :2000"
+      b)    out:        State  Recv-Q  Send-Q     Local Address:Port     Peer Address:Port   Process  
+                        ESTAB  0       0           192.168.2.73:2000     192.168.2.99:35030   users:(("server",pid=2239768,fd=4))
+      c)    exp:        This time the state says that a connection has been established instead of listening, which makes sense since we only wanted to show active connections instead of just those listening.  The other interesting thing I saw is that now the local and peer addresses are not 0.0.0.0, but distinct addresses now.
 11)
       a)    cmd:        /
       b)    out:        /
