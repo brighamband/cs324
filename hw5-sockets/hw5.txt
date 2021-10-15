@@ -1,3 +1,6 @@
+Host Machine:     falcon
+Client Machine:   usa
+
 PART 1
 
 1)
@@ -12,7 +15,7 @@ PART 1
                     UNCONN   0        0                0.0.0.0:2000           0.0.0.0:*       users:(("server",pid=2103343,fd=3))
       c)    exp:    It's showing that it's showing a list of services listening from port 2000.  In our case it's just the one service running that we started when we ran the server file.  It gives the state, then tells us how much data is in the queue for the socket waiting to be read or sent.  It then has more port info.
 4)
-      a)    client cmd:       ./client -4 fiji 2000 foo bar baz catvideo
+      a)    client cmd:       ./client -4 falcon 2000 foo bar baz catvideo
       b)    client out:       Sent 4 bytes to server
                               Received 4 bytes: foo
                               Sent 4 bytes to server
@@ -40,7 +43,7 @@ PART 2
       c)    exp:        This time for TCP the output looked pretty similar to UDP, except this time instead of Send-Q being 0, Send-Q had a value of 100.  This makes sense intuitively, since UDP sent data over in packets over separate calls, so each time the server received a new packet from a call, it only knew of that call itself, meaning as far as each individual call was, it had no more to send by the end of a call (since it would send more in the next call).  With TCP however, since it reads with a buffer, here the server recognized that 100 more bits needed to be read.
 
 9)    
-      a)    cmd:        ./client -4 fiji 2000 foo bar baz catvideo
+      a)    cmd:        ./client -4 falcon 2000 foo bar baz catvideo
       b)    out:        Sent 4 bytes to server
                         Received 4 bytes: foo
                         Sent 4 bytes to server
@@ -55,9 +58,9 @@ PART 2
                         ESTAB  0       0           192.168.2.73:2000     192.168.2.99:35030   users:(("server",pid=2239768,fd=4))
       c)    exp:        This time the state says that a connection has been established instead of listening, which makes sense since we only wanted to show active connections instead of just those listening.  The other interesting thing I saw is that now the local and peer addresses are not 0.0.0.0, but distinct addresses now.
 11)
-      a)    cmd:        /
-      b)    out:        /
-      c)    exp:        /
+      a)    cmd:        ss -t -p -n "sport = :2000"
+      b)    out:        State Recv-Q Send-Q  Local Address:Port   Peer Address:Port Process
+      c)    exp:        Now that the socket connection was successfully established and successfully passed through the correct data, it closes the server, so therefore it won't show any active running TCP connections.
 12)
       a)    /
       b)    /          
