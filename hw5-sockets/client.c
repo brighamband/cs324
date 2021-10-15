@@ -81,30 +81,35 @@ int main(int argc, char *argv[]) {
 	/* Send remaining command-line arguments as separate
 	   datagrams, and read responses from server */
 
-	for (j = hostindex + 2; j < argc; j++) {
-		len = strlen(argv[j]) + 1;
-		/* +1 for terminating null byte */
+	fread(buf, 1, 4096, std);
 
-		if (len + 1 > BUF_SIZE) {
-			fprintf(stderr,
-					"Ignoring long message in argument %d\n", j);
-			continue;
-		}
+	// loop through bytes in buffer
+		// send bytes
 
-		if (write(sfd, argv[j], len) != len) {
-			fprintf(stderr, "partial/failed write\n");
-			exit(EXIT_FAILURE);
-		}
-		printf("Sent %ld bytes to server\n", len);
+	// for (j = hostindex + 2; j < argc; j++) {
+	// 	len = strlen(argv[j]) + 1;
+	// 	/* +1 for terminating null byte */
 
-		// nread = read(sfd, buf, BUF_SIZE);
-		// if (nread == -1) {
-		// 	perror("read");
-		// 	exit(EXIT_FAILURE);
-		// }
+	// 	if (len + 1 > BUF_SIZE) {
+	// 		fprintf(stderr,
+	// 				"Ignoring long message in argument %d\n", j);
+	// 		continue;
+	// 	}
 
-		// printf("Received %zd bytes: %s\n", nread, buf);
-	}
+	// 	if (write(sfd, argv[j], len) != len) {
+	// 		fprintf(stderr, "partial/failed write\n");
+	// 		exit(EXIT_FAILURE);
+	// 	}
+	// 	printf("Sent %ld bytes to server\n", len);
+
+	// 	// nread = read(sfd, buf, BUF_SIZE);
+	// 	// if (nread == -1) {
+	// 	// 	perror("read");
+	// 	// 	exit(EXIT_FAILURE);
+	// 	// }
+
+	// 	// printf("Received %zd bytes: %s\n", nread, buf);
+	// }
 
 	exit(EXIT_SUCCESS);
 }
