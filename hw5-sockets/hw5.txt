@@ -85,6 +85,6 @@ PART 4
 17)
       The excess bytes/datagrams will just be discarded if there's a longer length than the number of bytes ready.  This is because it can only receive up to the requested amount.
 18)
-      /
+      When the packet is smaller than the passed buffer, only that much data is returned, so it will only receive the datagram up to the length that you specified.
 19)
       /
