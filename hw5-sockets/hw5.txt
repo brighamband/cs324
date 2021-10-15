@@ -87,4 +87,4 @@ PART 4
 18)
       When the packet is smaller than the passed buffer, only that much data is returned, so it will only receive the datagram up to the length that you specified.
 19)
-      /
+      If it's a receive done on the server, it will receive the number of bytes ready, then the rest will stay in the buffer to be read later.  If it's on the client, it will read in the number of bytes specified, then the remaining bytes will be discarded since they exceed the length of the buffer.
