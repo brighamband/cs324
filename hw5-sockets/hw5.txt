@@ -83,7 +83,7 @@ PART 4
 16)
       If no datagrams/bytes are available at the client socket, it will wait (waits for message to arrive, unless it's non-blocking).
 17)
-      
+      The excess bytes/datagrams will just be discarded if there's a longer length than the number of bytes ready.  This is because it can only receive up to the requested amount.
 18)
       /
 19)
