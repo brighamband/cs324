@@ -62,10 +62,10 @@ PART 2
       b)    out:        State Recv-Q Send-Q  Local Address:Port   Peer Address:Port Process
       c)    exp:        Now that the socket connection was successfully established and successfully passed through the correct data, it closes the server, so therefore it won't show any active running TCP connections.
 12)
-      a)    /
-      b)    /          
-      c)    /
-      d)    /
+      a)    4     (The client sends 4 writes to the server, one for each string, just like it did before)
+      b)    4     (4 bytes because that's how much the first string is, then the other 17 will come after the first receive has been completed)     
+      c)    2     (Unlike UDP that needs to make a call for each string that is sent, sending 4 total, this one sends them all to the server, then the server receives the first and the rest are stuck in a buffer on the server, then the server receives the remaining strings.  Therefore it takes 2 calls.
+      d)    Instead of sending one string from the client, then receiving it in the server, then doing that over and over again until all strings have been sent from the client to the server (UDP), here TCP allows all the strings to be sent initially by the client, then the server just has them in a buffer and can read them in when it is able to.
 
 PART 3
 

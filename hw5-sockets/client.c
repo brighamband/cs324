@@ -97,13 +97,13 @@ int main(int argc, char *argv[]) {
 		}
 		printf("Sent %ld bytes to server\n", len);
 
-		nread = read(sfd, buf, BUF_SIZE);
-		if (nread == -1) {
-			perror("read");
-			exit(EXIT_FAILURE);
-		}
+		// nread = read(sfd, buf, BUF_SIZE);
+		// if (nread == -1) {
+		// 	perror("read");
+		// 	exit(EXIT_FAILURE);
+		// }
 
-		printf("Received %zd bytes: %s\n", nread, buf);
+		// printf("Received %zd bytes: %s\n", nread, buf);
 	}
 
 	exit(EXIT_SUCCESS);
