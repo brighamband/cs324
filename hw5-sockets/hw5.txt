@@ -75,10 +75,38 @@ PART 3
             nc out:           0ef39a3f241cdd6552ad131e01afa9171b3dab8d  -
       b)    client cmd:       ./client -4 fiji 13000 < alpha.txt
 14)   
-      cmd:
-      contents:
+      cmd:              ./client www-notls.imaal.byu.edu 80 < http-bestill.txt
+      contents:         HTTP/1.1 200 OK
+                        Date: Sun, 17 Oct 2021 06:01:00 GMT
+                        Server: Apache/2.4.38 (Debian)
+                        Content-length: 809
+                        Vary: Accept-Encoding
+                        Connection: close
+                        Content-Type: text/plain
+
+
+                        1. Be still, my soul: The Lord is on thy side;
+                        With patience bear thy cross of grief or pain.
+                        Leave to thy God to order and provide;
+                        In ev'ry change he faithful will remain.
+                        Be still, my soul: Thy best, thy heav'nly Friend
+                        Thru thorny ways leads to a joyful end.
+
+                        2. Be still, my soul: Thy God doth undertake
+                        To guide the future as he has the past.
+                        Thy hope, thy confidence let nothing shake;
+                        All now mysterious shall be bright at last.
+                        Be still, my soul: The waves and winds still know
+                        His voice who ruled them while he dwelt below.
+
+                        3. Be still, my soul: The hour is hast'ning on
+                        When we shall be forever with the Lord,
+                        When disappointment, grief, and fear are gone,
+                        Sorrow forgot, love's purest joys restored.
+                        Be still, my soul: When change and tears are past,
+                        All safe and blessed we shall meet at last.
 15)
-      cmd:
+      cmd:        ./client www-notls.imaal.byu.edu 80 < http-socket.txt | ./strip_http.py > socket.jpg
 
 PART 4
 

@@ -81,6 +81,8 @@ int main(int argc, char *argv[]) {
 	/* Send remaining command-line arguments as separate
 	   datagrams, and read responses from server */
 
+	// #13
+
 	ssize_t curRead = 0;
 	while ((curRead = fread(buf, 1, 4096, stdin)) > 0) {
 		nread += curRead;
@@ -91,10 +93,18 @@ int main(int argc, char *argv[]) {
 	while (len < nread) {
 		len += write(sfd, buf, nread);
 		printf("%ld total bytes sent\n", len);
-		// loop through bytes in buffer
-		// send bytes // write to socket
 	}
-	
+
+	// #14
+	char outBuf[BUF_SIZE];
+	curRead = 0;	// Reused, num bytes read in a single call
+	nread = 0;		// Reused, total bytes read across all iterations
+
+	while (curRead = read(sfd, outBuf, 4096) > 0) {
+		nread += curRead;
+		printf("%s", outBuf);	// Print contents of output buffer
+		memset(outBuf, 0, sizeof(outBuf));
+	}
 
 	// for (j = hostindex + 2; j < argc; j++) {
 	// 	len = strlen(argv[j]) + 1;
