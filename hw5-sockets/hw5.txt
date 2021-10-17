@@ -70,8 +70,10 @@ PART 2
 PART 3
 
 13)   
-      a)    /
-      b)    /
+      a)    
+            nc cmd:           nc -l 13000 | sha1sum
+            nc out:           0ef39a3f241cdd6552ad131e01afa9171b3dab8d  -
+      b)    client cmd:       ./client -4 fiji 13000 < alpha.txt
 14)   
       cmd:
       contents:

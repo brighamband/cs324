@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define BUF_SIZE 500
+#define BUF_SIZE 20000
 
 int main(int argc, char *argv[]) {
 	struct addrinfo hints;
@@ -81,10 +81,20 @@ int main(int argc, char *argv[]) {
 	/* Send remaining command-line arguments as separate
 	   datagrams, and read responses from server */
 
-	fread(buf, 1, 4096, std);
+	ssize_t curRead = 0;
+	while ((curRead = fread(buf, 1, 4096, stdin)) > 0) {
+		nread += curRead;
+		printf("%ld bytes read\n", nread);
+	}
 
-	// loop through bytes in buffer
-		// send bytes
+	len = 0;	// len is number of bytes sent
+	while (len < nread) {
+		len += write(sfd, buf, nread);
+		printf("%ld total bytes sent\n", len);
+		// loop through bytes in buffer
+		// send bytes // write to socket
+	}
+	
 
 	// for (j = hostindex + 2; j < argc; j++) {
 	// 	len = strlen(argv[j]) + 1;
