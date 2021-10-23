@@ -5,6 +5,7 @@
 #include<stdlib.h>
 #include<sys/types.h>
 #include<sys/socket.h>
+#include <time.h>
 
 typedef unsigned int dns_rr_ttl;
 typedef unsigned short dns_rr_type;
@@ -29,6 +30,16 @@ struct dns_answer_entry {
 	struct dns_answer_entry *next;
 };
 typedef struct dns_answer_entry dns_answer_entry;
+
+#define MAX_SIZE 300
+
+typedef struct {	// Format for first part of byte wire (everything before question and type/class)
+	unsigned short id;
+	unsigned short flags;
+	unsigned short numQuestions;
+	unsigned short answerRRs;
+	unsigned int authorityAdditionalRRs;
+} header;
 
 void free_answer_entries(dns_answer_entry *ans) {
 	dns_answer_entry *next;
@@ -123,6 +134,32 @@ int name_ascii_to_wire(char *name, unsigned char *wire) {
 	 *              wire-formatted name should be constructed
 	 * OUTPUT: the length of the wire-formatted name.
 	 */
+
+
+	canonicalize_name(name);
+	// printf("%s before\n", name);
+
+	
+	
+	char tempName[MAX_SIZE];
+	strcpy(tempName, name);
+	char* label = strtok(tempName, ".");
+
+	while (label != NULL) {
+		// printf("label: %s\n", label);
+		int i = 0;
+		while (label[i] != '\0') {
+			printf("Label size: %ld\n", strlen(label));
+			printf("Next char is %c\n", label[i]);
+			i++;
+		}
+		printf("\n");
+
+		label = strtok(NULL, ".");
+	}
+	
+	// printf("%s after\n", name);
+
 }
 
 char *name_ascii_from_wire(unsigned char *wire, int *indexp) {
@@ -192,6 +229,19 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	 *               message should be constructed
 	 * OUTPUT: the length of the DNS wire message
 	 */
+
+	srand(time(0));
+	// int tempId[] = {rand(), rand()};
+	header header;
+	// memcpy(&header, &tempId, sizeof(header));
+	// printf("struct %d\n", header.id);
+	header.id = ntohs(rand());
+	header.flags = 0x01;
+
+	printf("struct %d\n", header.id);
+	// printf("random %d %d ", rand(), rand());
+
+	int wireLen = name_ascii_to_wire(qname, wire);
 }
 
 dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
@@ -224,6 +274,14 @@ int send_recv_message(unsigned char *request, int requestlen, unsigned char *res
 }
 
 dns_answer_entry *resolve(char *qname, char *server, char *port) {
+	unsigned char* wire = (unsigned char *) malloc(MAX_SIZE);
+	dns_rr_type type = 0x01;
+	unsigned short wireLen = create_dns_query(qname, type, wire);
+
+	print_bytes(wire, sizeof(wire));
+	
+
+	free(wire);
 }
 
 int main(int argc, char *argv[]) {
@@ -239,6 +297,7 @@ int main(int argc, char *argv[]) {
 		port = "53";
 	}
 	ans = ans_list = resolve(argv[1], argv[2], port);
+	printf("\n\n\n");
 	while (ans != NULL) {
 		printf("%s\n", ans->value);
 		ans = ans->next;
