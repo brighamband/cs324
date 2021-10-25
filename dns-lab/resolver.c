@@ -233,6 +233,7 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	 *               message should be constructed
 	 * OUTPUT: the length of the DNS wire message
 	 */
+	int offset = NUM_HEADER_BYTES;
 
 	// Build header (id, flags, numQuestions, answerRRs, authorityAdditionalRRs)
 	header header;
@@ -242,11 +243,26 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	header.numQuestions = ntohs(0x0001);	// FIXME - Hard-coded for now, may need to be dynamic later
 	header.answerRRs = ntohs(0x0000);	// FIXME - Hard-coded for now, may need to be dynamic later
 	header.authorityAdditionalRRs = ntohs(0x00000000);	// Hard-coded
+
 	// Add header to wire
 	memcpy(wire, &header, sizeof(header));
 
-	int wireLen = name_ascii_to_wire(qname, wire);
-	printf("wireLen: %d", wireLen);
+	// Add question to wire
+	int questionLen = name_ascii_to_wire(qname, wire);
+	offset += questionLen;
+
+	// Add type to wire
+	unsigned short type = ntohs(0x0001);
+	memcpy(&wire[offset], &type, sizeof(type));
+	offset += sizeof(type);
+
+	// Add class to wire
+	unsigned short class = ntohs(0x0001);
+	memcpy(&wire[offset], &class, sizeof(class));
+	offset += sizeof(class);
+
+	// Return total length of wire
+	return offset;
 }
 
 dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
@@ -288,8 +304,7 @@ dns_answer_entry *resolve(char *qname, char *server, char *port) {
 	unsigned short wireLen = create_dns_query(qname, qtype, wire);
 
 	// Print byte wire (debugging purposes)
-	// print_bytes(wire, sizeof(wire));
-	print_bytes(wire, 50);	// FIXME - Just testing, line above is probably ideal
+	print_bytes(wire, wireLen);
 
 	// Send off query wire
 	
