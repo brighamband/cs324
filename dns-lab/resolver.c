@@ -258,7 +258,7 @@ dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned ch
 	 */
 }
 
-int send_recv_message(unsigned char *request, int requestlen, unsigned char *response, char *server, unsigned short port) {
+int send_recv_message(unsigned char *request, int requestlen, unsigned char *response, char *server, char* /*unsigned short*/ port) {
 	/* 
 	 * Send a message (request) over UDP to a server (server) and port
 	 * (port) and wait for a response, which is placed in another byte
