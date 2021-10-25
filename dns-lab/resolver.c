@@ -41,6 +41,8 @@ typedef struct {	// Format for first part of byte wire (everything before questi
 	unsigned int authorityAdditionalRRs;
 } header;
 
+#define NUM_HEADER_BYTES 12
+
 void free_answer_entries(dns_answer_entry *ans) {
 	dns_answer_entry *next;
 	while (ans != NULL) {
@@ -138,7 +140,7 @@ int name_ascii_to_wire(char *name, unsigned char *wire) {
 	strcpy(tempName, name);
 	char* label = strtok(tempName, ".");
 
-	int offset = 0;	// FIXME
+	int offset = NUM_HEADER_BYTES;	// FIXME
 
 	// Loop through each label (each set of chars between .'s)
 	while (label != NULL) {
@@ -225,18 +227,27 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	 * OUTPUT: the length of the DNS wire message
 	 */
 
-	srand(time(0));
-	// int tempId[] = {rand(), rand()};
+	// Build header (id, flags, numQuestions, answerRRs, authorityAdditionalRRs)
 	header header;
+	// Build and add flags to wire
+	srand(time(0));
+	header.id = ntohs(rand());	// Random
+	header.flags = ntohs(0x0100);	// Hard-coded
+	header.numQuestions = ntohs(0x0001);	// FIXME - Hard-coded for now, may need to be dynamic later
+	header.answerRRs = ntohs(0x0000);	// FIXME - Hard-coded for now, may need to be dynamic later
+	// Add header to wire
+	memcpy(wire, &header, sizeof(header));
+
+	// int tempId[] = {rand(), rand()};
 	// memcpy(&header, &tempId, sizeof(header));
 	// printf("struct %d\n", header.id);
-	header.id = ntohs(rand());
-	header.flags = ntohs(0x0100);
+	// wire[0] = 'a';
 
-	printf("struct %d\n", header.id);
+	// printf("struct %d\n", header.id);
 	// printf("random %d %d ", rand(), rand());
 
-	int wireLen = name_ascii_to_wire(qname, wire);
+
+	// int wireLen = name_ascii_to_wire(qname, wire);
 }
 
 dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
