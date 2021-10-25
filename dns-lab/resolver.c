@@ -157,6 +157,13 @@ int name_ascii_to_wire(char *name, unsigned char *wire) {
 		}
 		label = strtok(NULL, ".");
 	}
+
+	// Add last 00 to signify question is done
+	wire[offset] = ntohs(0x00);
+	offset++;
+
+	// Return how many bytes the question took up (end minus start)
+	return offset - NUM_HEADER_BYTES;
 }
 
 char *name_ascii_from_wire(unsigned char *wire, int *indexp) {
@@ -234,10 +241,12 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	header.flags = ntohs(0x0100);	// Hard-coded
 	header.numQuestions = ntohs(0x0001);	// FIXME - Hard-coded for now, may need to be dynamic later
 	header.answerRRs = ntohs(0x0000);	// FIXME - Hard-coded for now, may need to be dynamic later
+	header.authorityAdditionalRRs = ntohs(0x00000000);	// Hard-coded
 	// Add header to wire
 	memcpy(wire, &header, sizeof(header));
 
-	// int wireLen = name_ascii_to_wire(qname, wire);
+	int wireLen = name_ascii_to_wire(qname, wire);
+	printf("wireLen: %d", wireLen);
 }
 
 dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
@@ -279,7 +288,8 @@ dns_answer_entry *resolve(char *qname, char *server, char *port) {
 	unsigned short wireLen = create_dns_query(qname, qtype, wire);
 
 	// Print byte wire (debugging purposes)
-	print_bytes(wire, sizeof(wire));
+	// print_bytes(wire, sizeof(wire));
+	print_bytes(wire, 50);	// FIXME - Just testing, line above is probably ideal
 
 	// Send off query wire
 	
