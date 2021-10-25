@@ -245,7 +245,7 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	header.authorityAdditionalRRs = ntohs(0x00000000);	// Hard-coded
 
 	// Add header to wire
-	memcpy(wire, &header, sizeof(header));
+	memcpy(wire, (unsigned char*)&header, sizeof(header));
 
 	// Add question to wire
 	int questionLen = name_ascii_to_wire(qname, wire);
