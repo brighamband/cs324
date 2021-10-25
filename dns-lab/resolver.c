@@ -134,32 +134,27 @@ int name_ascii_to_wire(char *name, unsigned char *wire) {
 	 *              wire-formatted name should be constructed
 	 * OUTPUT: the length of the wire-formatted name.
 	 */
-
-
-	canonicalize_name(name);
-	// printf("%s before\n", name);
-
-	
-	
 	char tempName[MAX_SIZE];
 	strcpy(tempName, name);
 	char* label = strtok(tempName, ".");
 
+	int offset = 0;	// FIXME
+
+	// Loop through each label (each set of chars between .'s)
 	while (label != NULL) {
-		// printf("label: %s\n", label);
+		// Add bit representing label length
+		wire[offset] = strlen(label);
+		offset++;
+
+		// Add remaining bits (converts the char into ascii)
 		int i = 0;
 		while (label[i] != '\0') {
-			printf("Label size: %ld\n", strlen(label));
-			printf("Next char is %c\n", label[i]);
+			wire[offset] = label[i];
+			offset++;
 			i++;
 		}
-		printf("\n");
-
 		label = strtok(NULL, ".");
 	}
-	
-	// printf("%s after\n", name);
-
 }
 
 char *name_ascii_from_wire(unsigned char *wire, int *indexp) {
@@ -236,7 +231,7 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	// memcpy(&header, &tempId, sizeof(header));
 	// printf("struct %d\n", header.id);
 	header.id = ntohs(rand());
-	header.flags = 0x01;
+	header.flags = ntohs(0x0100);
 
 	printf("struct %d\n", header.id);
 	// printf("random %d %d ", rand(), rand());
@@ -274,11 +269,23 @@ int send_recv_message(unsigned char *request, int requestlen, unsigned char *res
 }
 
 dns_answer_entry *resolve(char *qname, char *server, char *port) {
-	unsigned char* wire = (unsigned char *) malloc(MAX_SIZE);
-	dns_rr_type type = 0x01;
-	unsigned short wireLen = create_dns_query(qname, type, wire);
+	// Clean up name (remove caps and trailing .)
+	canonicalize_name(qname);		
 
+	// Create variables for query, then make the query
+	unsigned char* wire = (unsigned char *) malloc(MAX_SIZE);
+	dns_rr_type qtype = ntohs(0x0001);
+	unsigned short wireLen = create_dns_query(qname, qtype, wire);
+
+	// Print byte wire (debugging purposes)
 	print_bytes(wire, sizeof(wire));
+
+	// Send off query wire
+	
+	// send_recv_message(request, requestLen, response, server, port);
+
+	// Extract answer from response
+	// get_answer_address(qname, qtype, response);
 	
 
 	free(wire);
