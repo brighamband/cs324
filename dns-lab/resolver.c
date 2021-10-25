@@ -229,7 +229,6 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 
 	// Build header (id, flags, numQuestions, answerRRs, authorityAdditionalRRs)
 	header header;
-	// Build and add flags to wire
 	srand(time(0));
 	header.id = ntohs(rand());	// Random
 	header.flags = ntohs(0x0100);	// Hard-coded
@@ -237,15 +236,6 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	header.answerRRs = ntohs(0x0000);	// FIXME - Hard-coded for now, may need to be dynamic later
 	// Add header to wire
 	memcpy(wire, &header, sizeof(header));
-
-	// int tempId[] = {rand(), rand()};
-	// memcpy(&header, &tempId, sizeof(header));
-	// printf("struct %d\n", header.id);
-	// wire[0] = 'a';
-
-	// printf("struct %d\n", header.id);
-	// printf("random %d %d ", rand(), rand());
-
 
 	// int wireLen = name_ascii_to_wire(qname, wire);
 }
