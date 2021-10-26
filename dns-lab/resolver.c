@@ -194,9 +194,6 @@ char *name_ascii_from_wire(unsigned char *wire, unsigned char *indexp) {
 	unsigned char* name = (unsigned char *) malloc(MAX_SIZE);
 	memcpy(name, indexp, nameSize);
 
-	// Move indexp to new spot
-	indexp += nameSize;
-
 	// Print bytes (debugging purposes)
 	// print_bytes(name, nameSize);
 
@@ -220,12 +217,28 @@ dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp) {
 	 *              rdata_len, and rdata are skipped.
 	 * OUTPUT: the resource record (struct)
 	 */
-	 dns_rr resourceRec;
+	dns_rr resourceRec;
 	 
-	 
-	 resourceRec.name = name_ascii_from_wire(wire, indexp);
-	//  resourceRec.type = ...
-	//  resourceRec.class = ...	 
+	// Set name
+	resourceRec.name = name_ascii_from_wire(wire, indexp);
+	indexp += strlen(resourceRec.name);
+
+	// Set type
+	resourceRec.type = indexp[0] | indexp[1];	// Grabs both bits and puts them side by side in an unsigned short
+	indexp += sizeof(unsigned short);
+
+	// Set class
+	resourceRec.class = indexp[0] | indexp[1];	// Grabs both bits and puts them side by side in an unsigned short
+	indexp += sizeof(unsigned short);
+
+	// Set ttl
+	resourceRec.ttl = indexp[0] | indexp[1] | indexp[2] | indexp[3];
+	indexp += sizeof(unsigned int);
+
+	// Set rdata_len
+	resourceRec.rdata_len = indexp[0] | indexp[1];	// Grabs both bits and puts them side by side in an unsigned short
+	indexp += sizeof(unsigned short);
+	print_bytes(indexp, sizeof(unsigned int));
 
 	//  resourceRec.ttl = ...
 	//  resourceRec.rdata_len = ...
@@ -234,7 +247,7 @@ dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp) {
 	// Update indexp's pointer val to be next one beyond resource rec
 	//  *indexp = 
 
-	 return resourceRec;
+	return resourceRec;
 }
 
 
