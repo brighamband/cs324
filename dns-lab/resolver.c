@@ -194,12 +194,16 @@ char *name_ascii_from_wire(unsigned char *wire, unsigned char *indexp) {
 	unsigned char* name = (unsigned char *) malloc(MAX_SIZE);
 	memcpy(name, indexp, nameSize);
 
+	// Move indexp to new spot
+	indexp += nameSize;
+
+	// Print bytes (debugging purposes)
 	// print_bytes(name, nameSize);
 
 	return name;
 }
 
-dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp, int query_only) {
+dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp) {
 	/* 
 	 * Extract the wire-formatted resource record at the offset specified by
 	 * *indexp in the array of bytes provided (wire) and return a 
@@ -223,11 +227,9 @@ dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp, int query_only) 
 	//  resourceRec.type = ...
 	//  resourceRec.class = ...	 
 
-	 if (!query_only) {
-		//  resourceRec.ttl = ...
-		//  resourceRec.rdata_len = ...
-		//  resourceRec.rdata = ...
-	 }
+	//  resourceRec.ttl = ...
+	//  resourceRec.rdata_len = ...
+	//  resourceRec.rdata = ...
 
 	// Update indexp's pointer val to be next one beyond resource rec
 	//  *indexp = 
@@ -299,7 +301,7 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	return offset;
 }
 
-void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, int wireLen) {
+void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, int wireLen, unsigned char *indexp) {
 	/* 
 	 * Extract the IPv4 address from the answer section, following any
 	 * aliases that might be found, and return the string representation of
@@ -311,10 +313,10 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, in
 	 * OUTPUT: a linked list of dns_answer_entrys the value member of each
 	 * reflecting either the name or IP address.  If
 	 */
-	dns_rr resourceRec = rr_from_wire(wire, , false);	// FIXME - fix queryOnly
+	dns_rr resourceRec = rr_from_wire(wire, indexp);
 
 	// Print IP Address
-	printf("IP Address: 11.111.11.111\n");
+	printf("\nIP Address: 11.111.11.111\n");
 
 	free(resourceRec.name);
 }
@@ -411,10 +413,8 @@ void *resolve(char *qname, char *server, char *port) {
 	print_bytes(responseWire, responseLen);
 
 	// Extract answer from response
-	get_answer_address(qname, qtype, responseWire, responseLen);
-
-	char* indexPtr = responseWire + requestWireLen;
-	name_ascii_from_wire(responseWire, indexPtr);
+	char* indexp = responseWire + requestWireLen;
+	get_answer_address(qname, qtype, responseWire, responseLen, indexp);
 
 	// Clean up for malloc
 	free(requestWire);
