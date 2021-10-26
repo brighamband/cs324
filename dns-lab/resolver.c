@@ -237,15 +237,15 @@ dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp) {
 
 	// Set rdata_len
 	resourceRec.rdata_len = indexp[0] | indexp[1];	// Grabs both bits and puts them side by side in an unsigned short
+	printf("rdata len: ");
+	print_bytes(indexp, sizeof(unsigned short));
 	indexp += sizeof(unsigned short);
-	print_bytes(indexp, sizeof(unsigned int));
 
-	//  resourceRec.ttl = ...
-	//  resourceRec.rdata_len = ...
-	//  resourceRec.rdata = ...
-
-	// Update indexp's pointer val to be next one beyond resource rec
-	//  *indexp = 
+	//  Set rdata
+	unsigned char* data = (unsigned char *) malloc(MAX_SIZE);
+	memcpy(data, indexp, resourceRec.rdata_len);
+	resourceRec.rdata = data;
+	indexp += resourceRec.rdata_len;
 
 	return resourceRec;
 }
@@ -330,6 +330,9 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, in
 
 	// Print IP Address
 	printf("\nIP Address: 11.111.11.111\n");
+
+	// Move indexp to end of the answer resource record (sets it up to be the next rr if there is one)
+	indexp += strlen(resourceRec.name) + sizeof(resourceRec.type) + sizeof(resourceRec.class) + sizeof(resourceRec.ttl) + sizeof(resourceRec.rdata_len) + resourceRec.rdata_len;
 
 	free(resourceRec.name);
 }
