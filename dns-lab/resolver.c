@@ -313,6 +313,28 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	return offset;
 }
 
+void grabCNames(unsigned char *wire, unsigned char *indexp) {
+	int i = 0;	// Needed because we want to ignore the first char if printing out the byte values themselves (it's the length)
+	while(indexp[0] != 0x00) {	// While indexp isn't at null terminator
+		if (indexp[0] >= 0xC0) {	// If it's a CNAME Alias (points elsewhere) - C0 is 192, meaning can't be ascii (too big)
+			// printf("HERE: %x", indexp[1]);
+			indexp = wire + indexp[1];	// Move indexp to the wire plus however many bytes are in the next byte
+		}
+		else if (indexp[0] < 0x2F) {	// If it's below where ascii starts, you know it's a label length, not an ascii char
+			if (i != 0) {	// Print a dot unless it's the first one, since that's just signifying the number of bytes
+				printf(".");
+			}
+			i++;
+			indexp++;
+		}
+		else {
+			printf("%c", indexp[0]);
+			indexp++;
+		}
+	}
+	printf("\n");
+}
+
 void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, int wireLen, unsigned char *indexp) {
 	/* 
 	 * Extract the IPv4 address from the answer section, following any
@@ -326,11 +348,13 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, in
 	 * reflecting either the name or IP address.  If
 	 */
 	dns_rr resourceRec = rr_from_wire(wire, indexp);
+	int resourceRecLen = strlen(resourceRec.name) + sizeof(resourceRec.type) + sizeof(resourceRec.class) + sizeof(resourceRec.ttl) + sizeof(resourceRec.rdata_len) + resourceRec.rdata_len;
 
 	// Find out how many answer records there are (useful in for loop)
 	short idx = sizeof(unsigned short) + sizeof(unsigned short) + sizeof(unsigned short);	// Skip past id, flags, numQuestions
 	int numAnswerRecs = wire[numAnswerRecs] | wire[numAnswerRecs + 1];
 
+	// Loop through each answer record
 	for (int i = 0; i < numAnswerRecs; i++) {
 		// Case 1 - print normal IPv4 address
 		if (resourceRec.type == 1) {
@@ -341,7 +365,7 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, in
 		}
 		// Case 2 - CNAME aliases (step 7)
 		else if (resourceRec.type == 5) {
-
+			grabCNames(wire, indexp + resourceRecLen);	// Grab CNAMEs starting with next record
 		}
 		else {
 			return NULL;
@@ -349,8 +373,9 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, in
 
 		// Handle updates
 		// Move indexp to end of the answer resource record (sets it up to be the next rr if there is one)
-		indexp += strlen(resourceRec.name) + sizeof(resourceRec.type) + sizeof(resourceRec.class) + sizeof(resourceRec.ttl) + sizeof(resourceRec.rdata_len) + resourceRec.rdata_len;
+		indexp += resourceRecLen;
 		resourceRec = rr_from_wire(wire, indexp);
+		resourceRecLen = strlen(resourceRec.name) + sizeof(resourceRec.type) + sizeof(resourceRec.class) + sizeof(resourceRec.ttl) + sizeof(resourceRec.rdata_len) + resourceRec.rdata_len;
 	}
 
 
