@@ -26,12 +26,13 @@ typedef struct {
 	unsigned char *rdata;
 } dns_rr;
 
-struct dns_answer_entry;
-struct dns_answer_entry {
-	char *value;
-	struct dns_answer_entry *next;
-};
-typedef struct dns_answer_entry dns_answer_entry;
+/* Extra credit for linked list */
+// struct dns_answer_entry;
+// struct dns_answer_entry {
+// 	char *value;
+// 	struct dns_answer_entry *next;
+// };
+// typedef struct dns_answer_entry dns_answer_entry;
 
 #define MAX_SIZE 300
 
@@ -45,15 +46,15 @@ typedef struct {	// Format for first part of byte wire (everything before questi
 
 #define NUM_HEADER_BYTES 12
 
-void free_answer_entries(dns_answer_entry *ans) {
-	dns_answer_entry *next;
-	while (ans != NULL) {
-		next = ans->next;
-		free(ans->value);
-		free(ans);
-		ans = next;
-	}
-}
+// void free_answer_entries(dns_answer_entry *ans) {
+// 	dns_answer_entry *next;
+// 	while (ans != NULL) {
+// 		next = ans->next;
+// 		free(ans->value);
+// 		free(ans);
+// 		ans = next;
+// 	}
+// }
 
 void print_bytes(unsigned char *bytes, int byteslen) {
 	int i, j, byteslen_adjusted;
@@ -267,7 +268,7 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	return offset;
 }
 
-dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
+void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
 	/* 
 	 * Extract the IPv4 address from the answer section, following any
 	 * aliases that might be found, and return the string representation of
@@ -279,6 +280,8 @@ dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned ch
 	 * OUTPUT: a linked list of dns_answer_entrys the value member of each
 	 * reflecting either the name or IP address.  If
 	 */
+
+	// Print IP Address
 }
 
 int send_recv_message(unsigned char *request, int requestlen, unsigned char *response, char *server, char* port) {
@@ -353,7 +356,7 @@ int send_recv_message(unsigned char *request, int requestlen, unsigned char *res
 	return responseLen;
 }
 
-dns_answer_entry *resolve(char *qname, char *server, char *port) {
+void *resolve(char *qname, char *server, char *port) {
 	// Clean up name (remove caps and trailing .)
 	canonicalize_name(qname);		
 
@@ -371,6 +374,7 @@ dns_answer_entry *resolve(char *qname, char *server, char *port) {
 
 	// Print byte wire (debugging purposes)
 	print_bytes(response, responseLen);
+
 	// Extract answer from response
 	// get_answer_address(qname, qtype, response);
 	
@@ -382,7 +386,7 @@ dns_answer_entry *resolve(char *qname, char *server, char *port) {
 
 int main(int argc, char *argv[]) {
 	char *port;
-	dns_answer_entry *ans_list, *ans;
+	// dns_answer_entry *ans_list, *ans;
 	if (argc < 3) {
 		fprintf(stderr, "Usage: %s <domain name> <server> [ <port> ]\n", argv[0]);
 		exit(1);
@@ -392,13 +396,13 @@ int main(int argc, char *argv[]) {
 	} else {
 		port = "53";
 	}
-	ans = ans_list = resolve(argv[1], argv[2], port);
+	resolve(argv[1], argv[2], port);
 	printf("\n\n\n");
-	while (ans != NULL) {
-		printf("%s\n", ans->value);
-		ans = ans->next;
-	}
-	if (ans_list != NULL) {
-		free_answer_entries(ans_list);
-	}
+	// while (ans != NULL) {
+	// 	printf("%s\n", ans->value);
+	// 	ans = ans->next;
+	// }
+	// if (ans_list != NULL) {
+	// 	free_answer_entries(ans_list);
+	// }
 }
