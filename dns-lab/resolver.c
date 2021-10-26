@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <time.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 typedef unsigned int dns_rr_ttl;
 typedef unsigned short dns_rr_type;
@@ -237,8 +238,6 @@ dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp) {
 
 	// Set rdata_len
 	resourceRec.rdata_len = indexp[0] | indexp[1];	// Grabs both bits and puts them side by side in an unsigned short
-	printf("rdata len: ");
-	print_bytes(indexp, sizeof(unsigned short));
 	indexp += sizeof(unsigned short);
 
 	//  Set rdata
@@ -329,7 +328,9 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, in
 	dns_rr resourceRec = rr_from_wire(wire, indexp);
 
 	// Print IP Address
-	printf("\nIP Address: 11.111.11.111\n");
+	char ipAddress[resourceRec.rdata_len];
+	sprintf(ipAddress, "%d.%d.%d.%d", resourceRec.rdata[0], resourceRec.rdata[1], resourceRec.rdata[2], resourceRec.rdata[3]);
+	printf("%s\n", ipAddress);
 
 	// Move indexp to end of the answer resource record (sets it up to be the next rr if there is one)
 	indexp += strlen(resourceRec.name) + sizeof(resourceRec.type) + sizeof(resourceRec.class) + sizeof(resourceRec.ttl) + sizeof(resourceRec.rdata_len) + resourceRec.rdata_len;
