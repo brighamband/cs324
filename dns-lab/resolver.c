@@ -5,7 +5,9 @@
 #include<stdlib.h>
 #include<sys/types.h>
 #include<sys/socket.h>
+#include <netdb.h>
 #include <time.h>
+#include <unistd.h>
 
 typedef unsigned int dns_rr_ttl;
 typedef unsigned short dns_rr_type;
@@ -297,21 +299,17 @@ int send_recv_message(unsigned char *request, int requestlen, unsigned char *res
 
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
-	int hostindex = 1;
 	int sfd, s, j;
-	size_t len;
-	ssize_t nread;
-	char buf[BUF_SIZE];
 
 	/* Obtain address(es) matching host/port */
 
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_INET;	/* IPv4 */
 	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
 	hints.ai_flags = 0;
-	hints.ai_protocol = 0;          /* Any protocol */
+	hints.ai_protocol = IPPROTO_UDP;          /* UDP protocol */
 
-	s = getaddrinfo(argv[hostindex], argv[hostindex + 1], &hints, &result);
+	s = getaddrinfo(server, port, &hints, &result);
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
@@ -341,33 +339,20 @@ int send_recv_message(unsigned char *request, int requestlen, unsigned char *res
 
 	freeaddrinfo(result);           /* No longer needed */
 
-	/* Send remaining command-line arguments as separate
-	   datagrams, and read responses from server */
+	/* Send wire as datagram, read responses from server */
 
-	for (j = hostindex + 2; j < argc; j++) {
-		len = strlen(argv[j]) + 1;
-		/* +1 for terminating null byte */
+	// sendto
+	send(sfd, request, requestlen, hints.ai_flags);
 
-		if (len + 1 > BUF_SIZE) {
-			fprintf(stderr,
-					"Ignoring long message in argument %d\n", j);
-			continue;
-		}
+	// recvfrom
+	char* buf[MAX_SIZE];
+	ssize_t responseLen = recv(sfd, buf, MAX_SIZE, hints.ai_flags);
+	memcpy(response, buf, MAX_SIZE);
 
-		if (write(sfd, argv[j], len) != len) {
-			fprintf(stderr, "partial/failed write\n");
-			exit(EXIT_FAILURE);
-		}
-		printf("Sent %ld bytes to server\n", len);
-
-		nread = read(sfd, buf, BUF_SIZE);
-		if (nread == -1) {
-			perror("read");
-			exit(EXIT_FAILURE);
-		}
-
-		printf("Received %zd bytes: %s\n", nread, buf);
-	}
+	// close
+	close(sfd);
+	
+	return responseLen;
 }
 
 dns_answer_entry *resolve(char *qname, char *server, char *port) {
@@ -386,6 +371,8 @@ dns_answer_entry *resolve(char *qname, char *server, char *port) {
 	unsigned char* response = (unsigned char *) malloc(MAX_SIZE);
 	int responseLen = send_recv_message(wire, wireLen, response, server, port);
 
+	// Print byte wire (debugging purposes)
+	print_bytes(response, responseLen);
 	// Extract answer from response
 	// get_answer_address(qname, qtype, response);
 	
