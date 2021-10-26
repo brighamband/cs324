@@ -53,6 +53,8 @@ void free_answer_entries(dns_answer_entry *ans) {
 	}
 }
 
+#define BUF_SIZE 500
+
 void print_bytes(unsigned char *bytes, int byteslen) {
 	int i, j, byteslen_adjusted;
 	unsigned char c;
@@ -279,7 +281,7 @@ dns_answer_entry *get_answer_address(char *qname, dns_rr_type qtype, unsigned ch
 	 */
 }
 
-int send_recv_message(unsigned char *request, int requestlen, unsigned char *response, char *server, char* /*unsigned short*/ port) {
+int send_recv_message(unsigned char *request, int requestlen, unsigned char *response, char *server, char* port) {
 	/* 
 	 * Send a message (request) over UDP to a server (server) and port
 	 * (port) and wait for a response, which is placed in another byte
@@ -292,7 +294,6 @@ int send_recv_message(unsigned char *request, int requestlen, unsigned char *res
 	 *             response should be received
 	 * OUTPUT: the size (bytes) of the response received
 	 */
-	#define BUF_SIZE 500
 
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
@@ -301,7 +302,6 @@ int send_recv_message(unsigned char *request, int requestlen, unsigned char *res
 	size_t len;
 	ssize_t nread;
 	char buf[BUF_SIZE];
-	int af = AF_UNSPEC;
 
 	/* Obtain address(es) matching host/port */
 
@@ -384,7 +384,7 @@ dns_answer_entry *resolve(char *qname, char *server, char *port) {
 
 	// Send off query wire from client to server using UDP
 	unsigned char* response = (unsigned char *) malloc(MAX_SIZE);
-	int responseLen = send_recv_message(request, requestLen, response, server, port);
+	int responseLen = send_recv_message(wire, wireLen, response, server, port);
 
 	// Extract answer from response
 	// get_answer_address(qname, qtype, response);
