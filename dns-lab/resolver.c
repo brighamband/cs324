@@ -327,13 +327,32 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, in
 	 */
 	dns_rr resourceRec = rr_from_wire(wire, indexp);
 
-	// Print IP Address
-	char ipAddress[resourceRec.rdata_len];
-	sprintf(ipAddress, "%d.%d.%d.%d", resourceRec.rdata[0], resourceRec.rdata[1], resourceRec.rdata[2], resourceRec.rdata[3]);
-	printf("%s\n", ipAddress);
+	// Find out how many answer records there are (useful in for loop)
+	short idx = sizeof(unsigned short) + sizeof(unsigned short) + sizeof(unsigned short);	// Skip past id, flags, numQuestions
+	int numAnswerRecs = wire[numAnswerRecs] | wire[numAnswerRecs + 1];
 
-	// Move indexp to end of the answer resource record (sets it up to be the next rr if there is one)
-	indexp += strlen(resourceRec.name) + sizeof(resourceRec.type) + sizeof(resourceRec.class) + sizeof(resourceRec.ttl) + sizeof(resourceRec.rdata_len) + resourceRec.rdata_len;
+	for (int i = 0; i < numAnswerRecs; i++) {
+		// Case 1 - print normal IPv4 address
+		if (resourceRec.type == 1) {
+			// Print IP Address
+			char ipAddress[resourceRec.rdata_len];
+			sprintf(ipAddress, "%d.%d.%d.%d", resourceRec.rdata[0], resourceRec.rdata[1], resourceRec.rdata[2], resourceRec.rdata[3]);
+			printf("%s\n", ipAddress);
+		}
+		// Case 2 - CNAME aliases (step 7)
+		else if (resourceRec.type == 5) {
+
+		}
+		else {
+			return NULL;
+		}
+
+		// Handle updates
+		// Move indexp to end of the answer resource record (sets it up to be the next rr if there is one)
+		indexp += strlen(resourceRec.name) + sizeof(resourceRec.type) + sizeof(resourceRec.class) + sizeof(resourceRec.ttl) + sizeof(resourceRec.rdata_len) + resourceRec.rdata_len;
+		resourceRec = rr_from_wire(wire, indexp);
+	}
+
 
 	free(resourceRec.name);
 }
