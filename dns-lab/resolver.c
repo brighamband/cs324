@@ -420,14 +420,14 @@ void *resolve(char *qname, char *server, char *port) {
 	unsigned short requestWireLen = create_dns_query(qname, qtype, requestWire);
 
 	// Print byte wire (debugging purposes)
-	print_bytes(requestWire, requestWireLen);
+	// print_bytes(requestWire, requestWireLen);
 
 	// Send off query wire from client to server using UDP
 	unsigned char* responseWire = (unsigned char *) malloc(MAX_SIZE);
 	int responseLen = send_recv_message(requestWire, requestWireLen, responseWire, server, port);
 
 	// Print byte wire (debugging purposes)
-	print_bytes(responseWire, responseLen);
+	// print_bytes(responseWire, responseLen);
 
 	// Extract answer from response
 	char* indexp = responseWire + requestWireLen;
