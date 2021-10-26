@@ -55,8 +55,6 @@ void free_answer_entries(dns_answer_entry *ans) {
 	}
 }
 
-#define BUF_SIZE 500
-
 void print_bytes(unsigned char *bytes, int byteslen) {
 	int i, j, byteslen_adjusted;
 	unsigned char c;
