@@ -1,10 +1,10 @@
-#include<arpa/inet.h>
-#include<netinet/in.h>
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-#include<sys/types.h>
-#include<sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netdb.h>
 #include <time.h>
 #include <unistd.h>
@@ -169,7 +169,7 @@ int name_ascii_to_wire(char *name, unsigned char *wire) {
 	return offset - NUM_HEADER_BYTES;
 }
 
-char *name_ascii_from_wire(unsigned char *wire, int *indexp) {
+char *name_ascii_from_wire(unsigned char *wire, unsigned char *indexp) {
 	/* 
 	 * Extract the wire-formatted DNS name at the offset specified by
 	 * *indexp in the array of bytes provided (wire) and return its string
@@ -183,9 +183,23 @@ char *name_ascii_from_wire(unsigned char *wire, int *indexp) {
 	 * OUTPUT: a string containing the string representation of the name,
 	 *              allocated on the heap.
 	 */
+
+	// Counts how long the name is (how many characters from indexp until it hits null)
+	int nameSize = 0;
+	while (indexp[nameSize] != ntohs(0x00)) {
+		nameSize++;
+	}
+
+	// Make char* for name (must be dynamic since we don't know how long name will be)
+	unsigned char* name = (unsigned char *) malloc(MAX_SIZE);
+	memcpy(name, indexp, nameSize);
+
+	// print_bytes(name, nameSize);
+
+	return name;
 }
 
-dns_rr rr_from_wire(unsigned char *wire, int *indexp, int query_only) {
+dns_rr rr_from_wire(unsigned char *wire, unsigned char *indexp, int query_only) {
 	/* 
 	 * Extract the wire-formatted resource record at the offset specified by
 	 * *indexp in the array of bytes provided (wire) and return a 
@@ -202,6 +216,23 @@ dns_rr rr_from_wire(unsigned char *wire, int *indexp, int query_only) {
 	 *              rdata_len, and rdata are skipped.
 	 * OUTPUT: the resource record (struct)
 	 */
+	 dns_rr resourceRec;
+	 
+	 
+	 resourceRec.name = name_ascii_from_wire(wire, indexp);
+	//  resourceRec.type = ...
+	//  resourceRec.class = ...	 
+
+	 if (!query_only) {
+		//  resourceRec.ttl = ...
+		//  resourceRec.rdata_len = ...
+		//  resourceRec.rdata = ...
+	 }
+
+	// Update indexp's pointer val to be next one beyond resource rec
+	//  *indexp = 
+
+	 return resourceRec;
 }
 
 
@@ -268,7 +299,7 @@ unsigned short create_dns_query(char *qname, dns_rr_type qtype, unsigned char *w
 	return offset;
 }
 
-void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
+void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire, int wireLen) {
 	/* 
 	 * Extract the IPv4 address from the answer section, following any
 	 * aliases that might be found, and return the string representation of
@@ -280,11 +311,12 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
 	 * OUTPUT: a linked list of dns_answer_entrys the value member of each
 	 * reflecting either the name or IP address.  If
 	 */
-
-
+	dns_rr resourceRec = rr_from_wire(wire, , false);	// FIXME - fix queryOnly
 
 	// Print IP Address
 	printf("IP Address: 11.111.11.111\n");
+
+	free(resourceRec.name);
 }
 
 int send_recv_message(unsigned char *request, int requestlen, unsigned char *response, char *server, char* port) {
@@ -364,26 +396,29 @@ void *resolve(char *qname, char *server, char *port) {
 	canonicalize_name(qname);		
 
 	// Create variables for query, then make the query
-	unsigned char* wire = (unsigned char *) malloc(MAX_SIZE);
+	unsigned char* requestWire = (unsigned char *) malloc(MAX_SIZE);
 	dns_rr_type qtype = ntohs(0x0001);
-	unsigned short wireLen = create_dns_query(qname, qtype, wire);
+	unsigned short requestWireLen = create_dns_query(qname, qtype, requestWire);
 
 	// Print byte wire (debugging purposes)
-	print_bytes(wire, wireLen);
+	print_bytes(requestWire, requestWireLen);
 
 	// Send off query wire from client to server using UDP
-	unsigned char* response = (unsigned char *) malloc(MAX_SIZE);
-	int responseLen = send_recv_message(wire, wireLen, response, server, port);
+	unsigned char* responseWire = (unsigned char *) malloc(MAX_SIZE);
+	int responseLen = send_recv_message(requestWire, requestWireLen, responseWire, server, port);
 
 	// Print byte wire (debugging purposes)
-	print_bytes(response, responseLen);
+	print_bytes(responseWire, responseLen);
 
 	// Extract answer from response
-	get_answer_address(qname, qtype, response);
+	get_answer_address(qname, qtype, responseWire, responseLen);
+
+	char* indexPtr = responseWire + requestWireLen;
+	name_ascii_from_wire(responseWire, indexPtr);
 
 	// Clean up for malloc
-	free(wire);
-	free(response);
+	free(requestWire);
+	free(responseWire);
 }
 
 int main(int argc, char *argv[]) {
