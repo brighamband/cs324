@@ -281,7 +281,10 @@ void *get_answer_address(char *qname, dns_rr_type qtype, unsigned char *wire) {
 	 * reflecting either the name or IP address.  If
 	 */
 
+
+
 	// Print IP Address
+	printf("IP Address: 11.111.11.111\n");
 }
 
 int send_recv_message(unsigned char *request, int requestlen, unsigned char *response, char *server, char* port) {
@@ -376,8 +379,7 @@ void *resolve(char *qname, char *server, char *port) {
 	print_bytes(response, responseLen);
 
 	// Extract answer from response
-	// get_answer_address(qname, qtype, response);
-	
+	get_answer_address(qname, qtype, response);
 
 	// Clean up for malloc
 	free(wire);
