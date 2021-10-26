@@ -381,7 +381,7 @@ void *resolve(char *qname, char *server, char *port) {
 
 	// Clean up for malloc
 	free(wire);
-	// free(response);
+	free(response);
 }
 
 int main(int argc, char *argv[]) {
