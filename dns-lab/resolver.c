@@ -320,7 +320,7 @@ void grabCNames(unsigned char *wire, unsigned char *indexp) {
 			// printf("HERE: %x", indexp[1]);
 			indexp = wire + indexp[1];	// Move indexp to the wire plus however many bytes are in the next byte
 		}
-		else if (indexp[0] < 0x2F) {	// If it's below where ascii starts, you know it's a label length, not an ascii char
+		else if (indexp[0] < 0x2D) {	// If it's below where ascii starts, you know it's a label length, not an ascii char
 			if (i != 0) {	// Print a dot unless it's the first one, since that's just signifying the number of bytes
 				printf(".");
 			}
