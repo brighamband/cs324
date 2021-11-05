@@ -21,7 +21,18 @@ PART 3: Simple Thread-based Concurrency
 7.    For simple thread-based, there is only 1 process running, and on that process there are 4 individual threads.  This is because they all have the same PID (meaning all 1 process) yet they have different LWPs.  In this thread-based version, it handles client connections all in the same process but on different threads.  Since they're all on different threads, they're able to still concurrently send data to the server.
 
 PART 4: Threadpool-based Concurrency
-8.    out:    .
-9.    .
+8.    out:    USER         PID    PPID NLWP     LWP S CMD
+              abrigham 1008413 1002375   11 1008413 S echoservert_pre
+              abrigham 1008413 1002375   11 1008414 S echoservert_pre
+              abrigham 1008413 1002375   11 1008415 S echoservert_pre
+              abrigham 1008413 1002375   11 1008416 S echoservert_pre
+              abrigham 1008413 1002375   11 1008417 S echoservert_pre
+              abrigham 1008413 1002375   11 1008418 S echoservert_pre
+              abrigham 1008413 1002375   11 1008419 S echoservert_pre
+              abrigham 1008413 1002375   11 1008420 S echoservert_pre
+              abrigham 1008413 1002375   11 1008421 S echoservert_pre
+              abrigham 1008413 1002375   11 1008422 S echoservert_pre
+              abrigham 1008413 1002375   11 1008423 S echoservert_pre
+9.    This time there still is 1 process (all have the same PID) and on that process there are separate threads (11 this time).  With simple thread-based, it creates a new thread every time a new task needs executed, but with threadpool there's a set/max number of threads that just be used whenever new tasks need completed.  If there's too many tasks for the number of threads, then it will wait to finish current tasks until running those pending.
 
 PART 5: Concurrency Review
