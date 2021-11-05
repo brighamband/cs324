@@ -10,5 +10,18 @@ PART 2: Process-based Concurrency
               abrigham 1005605 1005562    1 1005605 S echoserverp
               abrigham 1005625 1005562    1 1005625 S echoserverp
               abrigham 1005644 1005562    1 1005644 S echoserverp
-5.    For process-based, there are 4 separate processes running, each on their own thread.  It's clear looking at the PIDs and LWPs since they're all different.  In this process-based version, it handles client connections as different processes, which allows them all to concurrently send information to the server.
+5.    For process-based, there are 4 separate processes running, each on their own thread.  It's clear looking at the PIDs and LWPs since they're all different.  In this process-based version, it handles client connections as different processes, which allows them all to concurrently send data to the server.
 
+PART 3: Simple Thread-based Concurrency
+6.    out:    USER         PID    PPID NLWP     LWP S CMD
+              abrigham 1007040 1002375    4 1007040 S echoservert
+              abrigham 1007040 1002375    4 1007088 S echoservert
+              abrigham 1007040 1002375    4 1007208 S echoservert
+              abrigham 1007040 1002375    4 1007261 S echoservert
+7.    For simple thread-based, there is only 1 process running, and on that process there are 4 individual threads.  This is because they all have the same PID (meaning all 1 process) yet they have different LWPs.  In this thread-based version, it handles client connections all in the same process but on different threads.  Since they're all on different threads, they're able to still concurrently send data to the server.
+
+PART 4: Threadpool-based Concurrency
+8.    out:    .
+9.    .
+
+PART 5: Concurrency Review
