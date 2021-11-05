@@ -5,3 +5,10 @@ PART 1: No Concurrency
 3.    The next nc process I started (window 2) was able to connect to the server and send off the bytes that I entered earlier.  They couldn't get sent off initially because the server was connected to the client in window 1, and the server only had the 1 thread.  So once that client connection stopped, the server could then go to window 2 (the next client making a request to the server) and receive its data.
 
 PART 2: Process-based Concurrency
+4.    out:    USER         PID    PPID NLWP     LWP S CMD
+              abrigham 1005562 1002375    1 1005562 S echoserverp
+              abrigham 1005605 1005562    1 1005605 S echoserverp
+              abrigham 1005625 1005562    1 1005625 S echoserverp
+              abrigham 1005644 1005562    1 1005644 S echoserverp
+5.    For process-based, there are 4 separate processes running, each on their own thread.  It's clear looking at the PIDs and LWPs since they're all different.  In this process-based version, it handles client connections as different processes, which allows them all to concurrently send information to the server.
+
