@@ -48,6 +48,43 @@ int parse_request(const char *request, char *method,
 		return 0;
 	}
 
+	// Make non-const request variable
+	char temp_request[500];
+	strcpy(temp_request, request);
+
+	// Grab method
+	char* temp_ptr = strtok(temp_request, " ");
+	strcpy(method, temp_ptr);
+
+	// Grab hostname
+	temp_ptr = temp_request + strlen(temp_ptr) + 1;
+	temp_ptr += 7;	// http://
+	printf("HERE: %s\n\n", temp_ptr);
+	printf("KDJFKJ:  %s\n", strstr(temp_ptr, ":"))
+
+
+	// const char *start_of_path = strchr(request, ' ') + 1;
+	// printf("start: %s\n", start_of_path);
+
+	// Loop through each label (each set of chars between .'s)
+	// while (label != NULL) {
+	// 	// Add bit representing label length
+	// 	wire[offset] = strlen(label);
+	// 	offset++;
+
+	// 	// Add remaining bits (converts the char into ascii)
+	// 	int i = 0;
+	// 	while (label[i] != '\0') {
+	// 		wire[offset] = label[i];
+	// 		offset++;
+	// 		i++;
+	// 	}
+	// 	label = strtok(NULL, ".");
+	// }
+
+
+
+
 
 	return 1;
 }
