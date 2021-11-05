@@ -33,6 +33,28 @@ PART 4: Threadpool-based Concurrency
               abrigham 1008413 1002375   11 1008421 S echoservert_pre
               abrigham 1008413 1002375   11 1008422 S echoservert_pre
               abrigham 1008413 1002375   11 1008423 S echoservert_pre
-9.    This time there still is 1 process (all have the same PID) and on that process there are separate threads (11 this time).  With simple thread-based, it creates a new thread every time a new task needs executed, but with threadpool there's a set/max number of threads that just be used whenever new tasks need completed.  If there's too many tasks for the number of threads, then it will wait to finish current tasks until running those pending.
+9.    This time there still is 1 process (all have the same PID) and on that process there are separate threads (11 this time).  With simple thread-based, it creates a new thread every time a new task needs to be executed, but with threadpool there's a set/max number of threads that just be used whenever new tasks need completed.  If there's too many tasks for the number of threads, then it will wait to finish current tasks until running those pending.
 
 PART 5: Concurrency Review
+
+10.   echoserverp (Process-based Concurrency)
+      Pro:    Easier to code up.  Also since each thread is on its own process, the threads can easily be run on different cores of the CPU.
+      Con:    Heavier on system resources than threads because it has to make a new process and thread for every single task that needs to be run.
+
+11.   echoservert (Thread-based Concurrency)
+      Pro:    Client tasks will always be able to be run on the server because you can just make a new thread for it (those tasks will never have to wait in order to be run).  Harder to code, but generally a better solution than process-based.
+      Con:    If there are too many threads running, it will bog down the system resources and the computer will slow down (more and more threads can be created to meet the number of tasks)
+
+12.   echoservert_pre (Threadpool-based Concurrency)
+      Pro:    You can ensure that your server computer won't slow down because there's a cap to how many threads are made (fixed number), so if you receive too many tasks to be run (so many that it would slow down your machine), it will only take those it can handle, and wait to process the rest.
+      Con:    Because there's a fixed number of threads that can be made, if many tasks are trying to be run on the server, some tasks will inevitably have to wait until one of the threads is available before it can be run.
+
+13.   //
+
+14.   //
+
+15.   //
+
+16.   //
+
+PART 6: HTTP Parser
