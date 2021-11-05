@@ -22,6 +22,10 @@
  * Output: 1 if request is a complete HTTP request, 0 otherwise
  * */
 int is_complete_request(const char *request) {
+	char *found_ptr = strstr(request, "\r\n\r\n");
+	if (found_ptr != NULL) {
+		return 1;
+	}
 	return 0;
 }
 
@@ -39,7 +43,13 @@ int is_complete_request(const char *request) {
  * */
 int parse_request(const char *request, char *method,
 		char *hostname, char *port, char *uri) {
-	return 0;
+	// If client has not sent the full request, return 0 to show the request is not complete.
+	if (is_complete_request(request) == 0) {
+		return 0;
+	}
+
+
+	return 1;
 }
 
 int main() {
