@@ -49,12 +49,10 @@ PART 5: Concurrency Review
       Pro:    You can ensure that your server computer won't slow down because there's a cap to how many threads are made (fixed number), so if you receive too many tasks to be run (so many that it would slow down your machine), it will only take those it can handle, and wait to process the rest.
       Con:    Because there's a fixed number of threads that can be made, if many tasks are trying to be run on the server, some tasks will inevitably have to wait until one of the threads is available before it can be run.
 
-13.   //
+13.   The statements in the main function within the while(1) loop that make the accept() call and then call sbuf_insert() are the producer's role.  There are FIXME producer threads.
 
-14.   //
+14.   The statements in the thread function within the while(1) loop that make the sbuf_remove() call are the consumer's role.  There are FIXME consumer threads.
 
-15.   //
+15.   It will just keep waiting for an available slot (when slots gets a value bigger than 0)
 
-16.   //
-
-PART 6: HTTP Parser
+16.   The producer will execute line 33, which will call V() or sem_post(), incrementing the number of items.  Once the number of items is 1 (non-zero), the sleeping consumer thread will wake up and keep running the code in sbuf_remove().
