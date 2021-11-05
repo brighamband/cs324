@@ -48,7 +48,7 @@ After all three are running, type some text in the first of the three panes runn
 
 In a fifth pane (e.g., pane 5), run the following:
 
-$ ps -Lo user,pid,ppid,nlwp,lwp,state,ucmd -C echoserveri | grep ^username\\\|USER
+    $ ps -Lo user,pid,ppid,nlwp,lwp,state,ucmd -C echoserveri | grep ^username\\\|USER
 
 (Note: use your own username in place of "username", and use the actual name of the binary in place of "echoserver")
 

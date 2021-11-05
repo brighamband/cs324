@@ -1,1 +1,7 @@
-PART 1
+PART 1: No Concurrency
+1.    out:    USER         PID    PPID NLWP     LWP S CMD
+              abrigham 1002769 1002375    1 1002769 S echoserveri
+2.    There is 1 process and 1 thread running.  This is because no concurrency is happening, so there aren't any threads, they are all running on the same one.  So only the data sent from window 1 gets sent through, since that's the connection made.  The data from 2 and 3 doesn't get received yet since only 1 thread and process is running.
+3.    The next nc process I started (window 2) was able to connect to the server and send off the bytes that I entered earlier.  They couldn't get sent off initially because the server was connected to the client in window 1, and the server only had the 1 thread.  So once that client connection stopped, the server could then go to window 2 (the next client making a request to the server) and receive its data.
+
+PART 2: Process-based Concurrency
