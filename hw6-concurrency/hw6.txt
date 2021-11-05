@@ -53,6 +53,6 @@ PART 5: Concurrency Review
 
 14.   The statements in the thread function within the while(1) loop that make the sbuf_remove() call are the consumer's role.  There are 10 consumer threads (10 was a fixed number), and in line 40 it loops through 10 times making consumer threads.
 
-15.   It will just keep waiting for an available slot (when slots gets a value bigger than 0).  Then it will decrement it and run its code.
+15.   It will just keep waiting for an available slot (when slots gets a value bigger than 0).  Then it will decrement slots and run its code.
 
-16.   The producer will execute line 33, which will call V() or sem_post(), incrementing the number of items.  Once the number of items is 1 (non-zero), the sleeping consumer thread will wake up and keep running the code in sbuf_remove().
+16.   The producer will execute line 33, which will call V() or sem_post(), incrementing the number of items.  Once the number of items is 1 (non-zero), the sleeping consumer thread will wake up, decrements items, and keep running the code in sbuf_remove().
