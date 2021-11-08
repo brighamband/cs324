@@ -66,22 +66,28 @@ int parse_request(const char *request, char *method,
 	strcpy(host_port_str, temp_ptr);
 	strtok(host_port_str, "/");
 
-	// If there's a colon, grab port
+	// Host and Port
 	char* port_str = strstr(host_port_str, ":");
-	printf("HPP:  %s\n", host_port_str);
+	char host_str[500];
+	strcpy(host_str, host_port_str);
+
+	// If port was specified
 	if (port_str != NULL) {
+		strtok(host_str, ":");
+		strcpy(hostname, host_str);
 		strcpy(port, port_str + 1);	// Copy port_str into port, skipping the : colon
-	} else {
+	} 
+	// If just hostname
+	else {	// If not colon, make port the default
+		strcpy(hostname, host_str);
 		strcpy(port, "80");	// Default port number
 	}
 
-	// Otherwise 
-
-	// Grab everything after slash (URI)
-
-
-	printf("TP:  %s\n", temp_ptr);
-	// printf("HPP:  %s\n", host_port_str);
+	// Grab everything after slash (URI), if there is a specific uri
+	if (strstr(temp_ptr, "/")) {
+		char* uri_str = temp_ptr + strlen(host_port_str) + 1;  // Make uri be everything past the host, port and slash (the +1)
+		strcpy(uri, uri_str);
+	}
 
 	return 1;
 }
