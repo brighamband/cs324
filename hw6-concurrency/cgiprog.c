@@ -6,10 +6,11 @@ int main() {
 
   // Make HTTP response
   // Include response headers
-  printf("Content-length: %d\r\n", (int)strlen(query_str)); 
+  char *body = "The query string is: ";
+  printf("Content-length: %d\r\n", (int) strlen(body) + (int) strlen(query_str)); 
   printf("Content-type: text/plain\r\n\r\n");
   // Include response body
-  printf("The query string is: %s\n", query_str);
+  printf("%s%s\n", body, query_str);
 
   return 0;
 }
