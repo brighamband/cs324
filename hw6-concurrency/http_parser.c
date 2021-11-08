@@ -56,35 +56,32 @@ int parse_request(const char *request, char *method,
 	char* temp_ptr = strtok(temp_request, " ");
 	strcpy(method, temp_ptr);
 
-	// Grab hostname
-	temp_ptr = temp_request + strlen(temp_ptr) + 1;
-	temp_ptr += 7;	// http://
-	printf("HERE: %s\n\n", temp_ptr);
-	printf("KDJFKJ:  %s\n", strstr(temp_ptr, ":"))
+	// Grab entire path
+	temp_ptr = temp_request + strlen(temp_ptr) + 1;  // Move past method
+	temp_ptr += 7;	// Move past http://
+	temp_ptr = strtok(temp_ptr, " ");
+
+	// Grab everything before slash (Hostname and Port)
+	char host_port_str[500];
+	strcpy(host_port_str, temp_ptr);
+	strtok(host_port_str, "/");
+
+	// If there's a colon, grab port
+	char* port_str = strstr(host_port_str, ":");
+	printf("HPP:  %s\n", host_port_str);
+	if (port_str != NULL) {
+		strcpy(port, port_str + 1);	// Copy port_str into port, skipping the : colon
+	} else {
+		strcpy(port, "80");	// Default port number
+	}
+
+	// Otherwise 
+
+	// Grab everything after slash (URI)
 
 
-	// const char *start_of_path = strchr(request, ' ') + 1;
-	// printf("start: %s\n", start_of_path);
-
-	// Loop through each label (each set of chars between .'s)
-	// while (label != NULL) {
-	// 	// Add bit representing label length
-	// 	wire[offset] = strlen(label);
-	// 	offset++;
-
-	// 	// Add remaining bits (converts the char into ascii)
-	// 	int i = 0;
-	// 	while (label[i] != '\0') {
-	// 		wire[offset] = label[i];
-	// 		offset++;
-	// 		i++;
-	// 	}
-	// 	label = strtok(NULL, ".");
-	// }
-
-
-
-
+	printf("TP:  %s\n", temp_ptr);
+	// printf("HPP:  %s\n", host_port_str);
 
 	return 1;
 }
