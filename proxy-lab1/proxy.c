@@ -9,6 +9,11 @@ static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64;
 
 int main()
 {
+    // 1 - receive request from client
+    // 2 - send off request to server
+
+    // 3 - receive response from server
+    // 4 - return response to client
     printf("%s", user_agent_hdr);
     return 0;
 }
