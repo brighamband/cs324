@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "sbuf.h"
 #include "csapp.h"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -11,67 +12,36 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-/*** sbuf.h - START **************************************************************************/
-// typedef struct {
-//     int *buf;          /* Buffer array */         
-//     int n;             /* Maximum number of slots */
-//     int front;         /* buf[(front+1)%n] is first item */
-//     int rear;          /* buf[rear%n] is last item */
-//     sem_t mutex;       /* Protects accesses to buf */
-//     sem_t slots;       /* Counts available slots */
-//     sem_t items;       /* Counts available items */
-// } sbuf_t;
+// From echoservert_pre.c
+#define MAXLINE 8192
+#define NTHREADS  10
+#define SBUFSIZE  20
 
-// void sbuf_init(sbuf_t *sp, int n)
-// {
-//     sp->buf = calloc(n, sizeof(int)); 
-//     sp->n = n;                       /* Buffer holds max of n items */
-//     sp->front = sp->rear = 0;        /* Empty buffer iff front == rear */
-//     sem_init(&sp->mutex, 0, 1);      /* Binary semaphore for locking */
-//     sem_init(&sp->slots, 0, n);      /* Initially, buf has n empty slots */
-//     sem_init(&sp->items, 0, 0);      /* Initially, buf has zero data items */
-// }
-
-// void sbuf_deinit(sbuf_t *sp)
-// {
-//     free(sp->buf);
-// }
-
-// void sbuf_insert(sbuf_t *sp, int item)
-// {
-//     sem_wait(&sp->slots);                          /* Wait for available slot */
-//     sem_wait(&sp->mutex);                          /* Lock the buffer */
-//     sp->buf[(++sp->rear)%(sp->n)] = item;   /* Insert the item */
-//     sem_post(&sp->mutex);                          /* Unlock the buffer */
-//     sem_post(&sp->items);                          /* Announce available item */
-// }
-
-// int sbuf_remove(sbuf_t *sp)
-// {
-//     int item;
-//     sem_wait(&sp->items);                          /* Wait for available item */
-//     sem_wait(&sp->mutex);                          /* Lock the buffer */
-//     item = sp->buf[(++sp->front)%(sp->n)];  /* Remove the item */
-//     sem_post(&sp->mutex);                          /* Unlock the buffer */
-//     sem_post(&sp->slots);                          /* Announce available slot */
-//     return item;
-// }
-/*** sbuf.h - END ****************************************************************************/
-
-/** MY OWN CUSTOM FNS - START ****************************************************************/
-char* get_http_req(int connfd) {
-	// Reads everything from the file descriptor into the buffer
-	char* buf = (char *) malloc(MAXLINE);
-	Read(connfd, buf, MAXLINE);
-	return buf;
-}
-
+// From hw6
 #define HTTP_REQUEST_MAX_SIZE 4096
 #define HOSTNAME_MAX_SIZE 512
 #define PORT_MAX_SIZE 6
 #define URI_MAX_SIZE 4096
 #define METHOD_SIZE 32
 
+// For proxy.c - /* Recommended max cache and object sizes */
+#define MAX_CACHE_SIZE 1049000
+#define MAX_OBJECT_SIZE 102400
+
+// For echoservert_pre.c thread
+sbuf_t sbuf; /* Shared buffer of connected descriptors */
+
+// For proxy.c - * You won't lose style points for including this long line in your code */
+// static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
+
+char* get_http_request(int connfd) {
+	// Reads everything from the file descriptor into the buffer
+	char* buf = (char *) malloc(HTTP_REQUEST_MAX_SIZE);
+	Read(connfd, buf, HTTP_REQUEST_MAX_SIZE);
+	return buf;
+}
+
+// From hw6
 int is_complete_request(char *request) {
 	char *found_ptr = strstr(request, "\r\n\r\n");
 	if (found_ptr != NULL) {
@@ -80,7 +50,8 @@ int is_complete_request(char *request) {
 	return 0;
 }
 
-char* parse_http_req(char *request) {
+// Based off hw6 but customized
+char* parse_http_request(char *request) {
 	char method[METHOD_SIZE];
 	char hostname[HOSTNAME_MAX_SIZE];
 	char port[PORT_MAX_SIZE];
@@ -177,84 +148,33 @@ char* parse_http_req(char *request) {
 	return NULL;	// Return 1 string that's the request
 }
 
-// Step 1
-void client_req_to_proxy() {}
-
-// Step 2
-void proxy_req_to_server() {}    
-
-// Step 3
-void server_res_to_proxy() {}    
-
-// Step 4
-void proxy_res_to_client() {}  
-/** MY OWN CUSTOM FNS - END ******************************************************************/
-
-/*** echo_cnt.c - START **************************************************************************/
-static int byte_cnt;  /* Byte counter */
-static sem_t mutex;   /* and the mutex that protects it */
-
-static void init_echo_cnt(void)
-{
-    Sem_init(&mutex, 0, 1);
-    byte_cnt = 0;
-}
-
-void echo_cnt(int connfd) 
-{
-    int n; 
-    char buf[MAXLINE]; 
-    rio_t rio;
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-
-    Pthread_once(&once, init_echo_cnt); //line:conc:pre:pthreadonce
-    Rio_readinitb(&rio, connfd);        //line:conc:pre:rioinitb
-    while((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
-			P(&mutex);
-			byte_cnt += n; //line:conc:pre:cntaccess1
-			printf("server received %d (%d total) bytes on fd %d\n", 
-						n, byte_cnt, connfd); //line:conc:pre:cntaccess2
-			V(&mutex);
-			Rio_writen(connfd, buf, n);
-    }
-}
-/*** echo_cnt.c - END ****************************************************************************/
-
-/*** echoservert_pre.c - START **************************************************************************/
-#define MAXLINE 8192
-#define NTHREADS  10
-#define SBUFSIZE  20
-
-sbuf_t sbuf; /* Shared buffer of connected descriptors */
-
+// Based from echoservert_pre.c
 void *thread(void *vargp) 
 {  
 	pthread_detach(pthread_self()); 
 	while (1) { 
 		int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
 		// echo_cnt(connfd);                /* Service client */
-		char* req = get_http_req(connfd);
-		parse_http_req(req);
+		char* req = get_http_request(connfd);
+		parse_http_request(req);
 		free(req);
 		close(connfd);
 	}
 }
-/*** echoservert_pre.c - END ****************************************************************************/
 
-/*** proxy.c - START **************************************************************************/
+// // Step 1
+// void client_req_to_proxy() {}
 
-/* Recommended max cache and object sizes */
-#define MAX_CACHE_SIZE 1049000
-#define MAX_OBJECT_SIZE 102400
+// // Step 2
+// void proxy_req_to_server() {}    
 
-/* You won't lose style points for including this long line in your code */
-// static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
+// // Step 3
+// void server_res_to_proxy() {}    
 
-// START - ECHO THREAD SERVER CODE - echoservert.c
-// Step 1
-  
-/*** proxy.c - END ****************************************************************************/
+// // Step 4
+// void proxy_res_to_client() {}  
 
+// Based off echoservert_pre.c
 int main(int argc, char **argv) {
 	int i, listenfd, connfd;
 	socklen_t clientlen;
