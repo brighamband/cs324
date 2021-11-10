@@ -12,50 +12,50 @@
 #include <semaphore.h>
 
 /*** sbuf.h - START **************************************************************************/
-typedef struct {
-    int *buf;          /* Buffer array */         
-    int n;             /* Maximum number of slots */
-    int front;         /* buf[(front+1)%n] is first item */
-    int rear;          /* buf[rear%n] is last item */
-    sem_t mutex;       /* Protects accesses to buf */
-    sem_t slots;       /* Counts available slots */
-    sem_t items;       /* Counts available items */
-} sbuf_t;
+// typedef struct {
+//     int *buf;          /* Buffer array */         
+//     int n;             /* Maximum number of slots */
+//     int front;         /* buf[(front+1)%n] is first item */
+//     int rear;          /* buf[rear%n] is last item */
+//     sem_t mutex;       /* Protects accesses to buf */
+//     sem_t slots;       /* Counts available slots */
+//     sem_t items;       /* Counts available items */
+// } sbuf_t;
 
-void sbuf_init(sbuf_t *sp, int n)
-{
-    sp->buf = calloc(n, sizeof(int)); 
-    sp->n = n;                       /* Buffer holds max of n items */
-    sp->front = sp->rear = 0;        /* Empty buffer iff front == rear */
-    sem_init(&sp->mutex, 0, 1);      /* Binary semaphore for locking */
-    sem_init(&sp->slots, 0, n);      /* Initially, buf has n empty slots */
-    sem_init(&sp->items, 0, 0);      /* Initially, buf has zero data items */
-}
+// void sbuf_init(sbuf_t *sp, int n)
+// {
+//     sp->buf = calloc(n, sizeof(int)); 
+//     sp->n = n;                       /* Buffer holds max of n items */
+//     sp->front = sp->rear = 0;        /* Empty buffer iff front == rear */
+//     sem_init(&sp->mutex, 0, 1);      /* Binary semaphore for locking */
+//     sem_init(&sp->slots, 0, n);      /* Initially, buf has n empty slots */
+//     sem_init(&sp->items, 0, 0);      /* Initially, buf has zero data items */
+// }
 
-void sbuf_deinit(sbuf_t *sp)
-{
-    free(sp->buf);
-}
+// void sbuf_deinit(sbuf_t *sp)
+// {
+//     free(sp->buf);
+// }
 
-void sbuf_insert(sbuf_t *sp, int item)
-{
-    sem_wait(&sp->slots);                          /* Wait for available slot */
-    sem_wait(&sp->mutex);                          /* Lock the buffer */
-    sp->buf[(++sp->rear)%(sp->n)] = item;   /* Insert the item */
-    sem_post(&sp->mutex);                          /* Unlock the buffer */
-    sem_post(&sp->items);                          /* Announce available item */
-}
+// void sbuf_insert(sbuf_t *sp, int item)
+// {
+//     sem_wait(&sp->slots);                          /* Wait for available slot */
+//     sem_wait(&sp->mutex);                          /* Lock the buffer */
+//     sp->buf[(++sp->rear)%(sp->n)] = item;   /* Insert the item */
+//     sem_post(&sp->mutex);                          /* Unlock the buffer */
+//     sem_post(&sp->items);                          /* Announce available item */
+// }
 
-int sbuf_remove(sbuf_t *sp)
-{
-    int item;
-    sem_wait(&sp->items);                          /* Wait for available item */
-    sem_wait(&sp->mutex);                          /* Lock the buffer */
-    item = sp->buf[(++sp->front)%(sp->n)];  /* Remove the item */
-    sem_post(&sp->mutex);                          /* Unlock the buffer */
-    sem_post(&sp->slots);                          /* Announce available slot */
-    return item;
-}
+// int sbuf_remove(sbuf_t *sp)
+// {
+//     int item;
+//     sem_wait(&sp->items);                          /* Wait for available item */
+//     sem_wait(&sp->mutex);                          /* Lock the buffer */
+//     item = sp->buf[(++sp->front)%(sp->n)];  /* Remove the item */
+//     sem_post(&sp->mutex);                          /* Unlock the buffer */
+//     sem_post(&sp->slots);                          /* Announce available slot */
+//     return item;
+// }
 /*** sbuf.h - END ****************************************************************************/
 
 /** MY OWN CUSTOM FNS - START ****************************************************************/
@@ -80,22 +80,23 @@ int is_complete_request(char *request) {
 	return 0;
 }
 
-int parse_http_req(char *request) {
+char* parse_http_req(char *request) {
 	char method[METHOD_SIZE];
 	char hostname[HOSTNAME_MAX_SIZE];
 	char port[PORT_MAX_SIZE];
 	char uri[URI_MAX_SIZE];
+	char* saveptr;
 
 	// If client has not sent the full request, return 0 to show the request is not complete.
 	if (is_complete_request(request) == 0) {
-		return 0;
+		return NULL;
 	}
 
 	// Make non-const request variable
 	char temp_request[500];
 	strcpy(temp_request, request);
 
-	char* token = strtok(temp_request, "\r\n");
+	char* token = strtok_r(temp_request, "\r\n", &saveptr);
 	
 	while (token != NULL) {
 		printf("TOKEN: %s\n", token);
@@ -111,13 +112,13 @@ int parse_http_req(char *request) {
 			strncpy(uri, token, len);
 		}
 
+		// Host
 		if (strstr(token, "Host:")) {
 			token += strlen("Host: ");	// Skip past Host and space
 			strcpy(hostname, token);
 		}
-		// printf("Tok: %s\n", token);
 
-		token = strtok(NULL, "\r\n");
+		token = strtok_r(NULL, "\r\n", &saveptr);
 	}
 	// // Grab method
 	// char* temp_ptr = strtok(temp_request, " ");
@@ -173,7 +174,7 @@ int parse_http_req(char *request) {
 	printf("port: %s\n", port);
 	printf("uri: %s\n", uri);
 
-	return 1;
+	return NULL;	// Return 1 string that's the request
 }
 
 // Step 1
