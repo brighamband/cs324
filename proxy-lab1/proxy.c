@@ -53,10 +53,10 @@ int is_complete_request(const char *request) {
 
 // Based from http_parser
 char* parse_client_request(char *client_req) {
-	char method[METHOD_SIZE];
-	char hostname[HOSTNAME_MAX_SIZE];
-	char port[PORT_MAX_SIZE];
-	char uri[URI_MAX_SIZE];
+	// char method[METHOD_SIZE];
+	// char hostname[HOSTNAME_MAX_SIZE];
+	// char port[PORT_MAX_SIZE];
+	// char uri[URI_MAX_SIZE];
 	char* saveptr;
 
 	char* server_req = (char*) malloc(HTTP_REQUEST_MAX_SIZE);
@@ -73,19 +73,12 @@ char* parse_client_request(char *client_req) {
 	char* token = strtok_r(temp_client_req, "\r\n", &saveptr);
 	
 	while (token != NULL) {
-		printf("TOKENd: %s\n", token);
+		printf("TOKEN: %s\n", token);
 
 		// If on first line
 		if (strstr(token, "GET")) {
-			strcat(server_req, token);
-
-			// // Method
-			// strcpy(method, "GET");
-
-			// // URI
-			// token = token + strlen(method) + sizeof(char);	// Move past method and space
-			// size_t len = strcspn(token, " ");
-			// strncpy(uri, token, len);
+			strncat(server_req, token, strlen(token) - 1);	// Append first line except last one (shouldn't be 1.1, but 1.0)
+			strcat(server_req, "0");	// 0 instead of 1 appended here so it's HTTP/1.0
 		}
 
 		// Host
@@ -144,7 +137,6 @@ char* parse_client_request(char *client_req) {
 	// 	char* uri_str = temp_ptr + strlen(host_port_str) + 1;  // Make uri be everything past the host, port and slash (the +1)
 	// 	strcpy(uri, uri_str);
 	// }
-	printf("\nRAN\n");
 
 	printf("\nserver_req: %s\n", server_req);
 
@@ -163,10 +155,12 @@ void *thread(void *vargp)
 	pthread_detach(pthread_self()); 
 	while (1) { 
 		int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
-		// echo_cnt(connfd);                /* Service client */
-		char* req = get_client_request(connfd);
-		parse_client_request(req);
-		free(req);
+		char* client_req = get_client_request(connfd);
+		char* server_req = parse_client_request(client_req);
+		if (server_req == NULL)
+			perror("Invalid HTTP Request");
+		free(client_req);
+		free(server_req);
 		close(connfd);
 	}
 }
@@ -177,7 +171,9 @@ void *thread(void *vargp)
 // // Step 2
 // void proxy_req_to_server() {}    
 
-// // Step 3BUF_SIZE
+// // Step 3
+// void server_res_to_proxy() {}
+
 // // Step 4
 // void proxy_res_to_client() {}  
 
