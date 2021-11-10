@@ -162,11 +162,5 @@ int main(int argc, char **argv) {
 		sbuf_insert(&sbuf, connfd); /* Insert connfd in buffer */
 	}
     
-    // 1 - receive request from client
-    // 2 - send off request to server
-
-    // 3 - receive response from server
-    // 4 - return response to client
-    // printf("%s", user_agent_hdr);
-    return 0;
+  return 0;
 }
