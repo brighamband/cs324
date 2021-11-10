@@ -114,7 +114,7 @@ void *thread(void *vargp)
 		char* server_req = client_to_server_request(client_req);
 		if (server_req == NULL)
 			perror("Invalid HTTP Request");
-		printf("\nserver_req: %s\n", server_req);
+		printf("\nserver_req:\n%s\n", server_req);
 		free(client_req);
 		free(server_req);
 		close(connfd);
