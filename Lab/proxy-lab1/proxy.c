@@ -58,6 +58,28 @@ int sbuf_remove(sbuf_t *sp)
 }
 /*** sbuf.h - END ****************************************************************************/
 
+/** MY OWN CUSTOM FNS - START ****************************************************************/
+char* get_http_req(int connfd) {
+	// Reads everything from the file descriptor into the buffer
+	char* buf = (char *) malloc(MAXLINE);
+	// FIXME - Add mutex here?
+	Read(connfd, buf, MAXLINE);
+	return buf;
+}
+
+// Step 1
+void client_req_to_proxy() {}
+
+// Step 2
+void proxy_req_to_server() {}    
+
+// Step 3
+void server_res_to_proxy() {}    
+
+// Step 4
+void proxy_res_to_client() {}  
+/** MY OWN CUSTOM FNS - END ******************************************************************/
+
 /*** echo_cnt.c - START **************************************************************************/
 static int byte_cnt;  /* Byte counter */
 static sem_t mutex;   /* and the mutex that protects it */
@@ -78,12 +100,12 @@ void echo_cnt(int connfd)
     Pthread_once(&once, init_echo_cnt); //line:conc:pre:pthreadonce
     Rio_readinitb(&rio, connfd);        //line:conc:pre:rioinitb
     while((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
-	P(&mutex);
-	byte_cnt += n; //line:conc:pre:cntaccess1
-	printf("server received %d (%d total) bytes on fd %d\n", 
-	       n, byte_cnt, connfd); //line:conc:pre:cntaccess2
-	V(&mutex);
-	Rio_writen(connfd, buf, n);
+			P(&mutex);
+			byte_cnt += n; //line:conc:pre:cntaccess1
+			printf("server received %d (%d total) bytes on fd %d\n", 
+						n, byte_cnt, connfd); //line:conc:pre:cntaccess2
+			V(&mutex);
+			Rio_writen(connfd, buf, n);
     }
 }
 /*** echo_cnt.c - END ****************************************************************************/
@@ -100,7 +122,10 @@ void *thread(void *vargp)
 	pthread_detach(pthread_self()); 
 	while (1) { 
 		int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
-		echo_cnt(connfd);                /* Service client */
+		// echo_cnt(connfd);                /* Service client */
+		char* req = get_http_req(connfd);
+		printf("req: %s\n", req);
+		free(req);
 		close(connfd);
 	}
 }
@@ -117,16 +142,7 @@ void *thread(void *vargp)
 
 // START - ECHO THREAD SERVER CODE - echoservert.c
 // Step 1
-void client_req_to_proxy() {}
-
-// Step 2
-void proxy_req_to_server() {}    
-
-// Step 3
-void server_res_to_proxy() {}    
-
-// Step 4
-void proxy_res_to_client() {}    
+  
 /*** proxy.c - END ****************************************************************************/
 
 int main(int argc, char **argv) {
