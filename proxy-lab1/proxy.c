@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "csapp.h"
 #include "sbuf.h"					// ADDED TO PROJ (also added sbuf.c)
-#include "http_parser.c"	// ADDED TO PROJ
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -22,6 +21,13 @@
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
 
+// From http_parser
+#define HTTP_REQUEST_MAX_SIZE 4096
+#define HOSTNAME_MAX_SIZE 512
+#define PORT_MAX_SIZE 6
+#define URI_MAX_SIZE 4096
+#define METHOD_SIZE 32
+
 // For echoservert_pre.c thread
 sbuf_t sbuf; /* Shared buffer of connected descriptors */
 
@@ -33,6 +39,122 @@ char* get_client_request(int connfd) {
 	char* buf = (char *) malloc(HTTP_REQUEST_MAX_SIZE);
 	Read(connfd, buf, HTTP_REQUEST_MAX_SIZE);
 	return buf;
+}
+
+// From http_parser
+// Returns 1 if complete, 0 if incomplete
+int is_complete_request(const char *request) {
+	char *found_ptr = strstr(request, "\r\n\r\n");
+	if (found_ptr != NULL) {
+		return 1;
+	}
+	return 0;
+}
+
+// Based from http_parser
+char* parse_client_request(char *client_req) {
+	char method[METHOD_SIZE];
+	char hostname[HOSTNAME_MAX_SIZE];
+	char port[PORT_MAX_SIZE];
+	char uri[URI_MAX_SIZE];
+	char* saveptr;
+
+	char* server_req = (char*) malloc(HTTP_REQUEST_MAX_SIZE);
+
+	// If client has not sent the full request, return 0 to show the request is not complete.
+	if (is_complete_request(client_req) == 0) {
+		return NULL;
+	}
+
+	// Make non-const request variable
+	char temp_client_req[500];
+	strcpy(temp_client_req, client_req);
+
+	char* token = strtok_r(temp_client_req, "\r\n", &saveptr);
+	
+	while (token != NULL) {
+		printf("TOKENd: %s\n", token);
+
+		// If on first line
+		if (strstr(token, "GET")) {
+			strcat(server_req, token);
+
+			// // Method
+			// strcpy(method, "GET");
+
+			// // URI
+			// token = token + strlen(method) + sizeof(char);	// Move past method and space
+			// size_t len = strcspn(token, " ");
+			// strncpy(uri, token, len);
+		}
+
+		// Host
+		// if (strstr(token, "Host:")) {
+		// 	token += strlen("Host: ");	// Skip past Host and space
+		// 	strcpy(hostname, token);
+		// }
+		printf("Running\n");
+
+		token = strtok_r(NULL, "\r\n", &saveptr);
+	}
+	// // Grab method
+	// char* temp_ptr = strtok(temp_request, " ");
+	// strcpy(method, temp_ptr);
+
+	// // Grab uri
+	// temp_ptr = temp_request + strlen(temp_ptr) + 1;
+	// strtok(temp_ptr, " ");
+	// strcpy(uri, temp_ptr);
+
+	// // Host
+	// temp_ptr = temp_request + strlen(temp_ptr);
+	// strtok(temp_ptr, " ");
+	// strtok(temp_ptr, " ");
+	// strcpy(hostname, temp_ptr);
+
+	// Grab entire path
+	// temp_ptr = temp_request + strlen(temp_ptr) + 1;  // Move past method
+	// temp_ptr += 7;	// Move past http://
+	// temp_ptr = strtok(temp_ptr, " ");
+
+	// // Grab everything before slash (Hostname and Port)
+	// char host_port_str[500];
+	// strcpy(host_port_str, temp_ptr);
+	// strtok(host_port_str, "/");
+
+	// // Host and Port
+	// char* port_str = strstr(host_port_str, ":");
+	// char host_str[500];
+	// strcpy(host_str, host_port_str);
+
+	// // If port was specified
+	// if (port_str != NULL) {
+	// 	strtok(host_str, ":");
+	// 	strcpy(hostname, host_str);
+	// 	strcpy(port, port_str + 1);	// Copy port_str into port, skipping the : colon
+	// } 
+	// // If just hostname
+	// else {	// If not colon, make port the default
+	// 	strcpy(hostname, host_str);
+	// 	strcpy(port, "80");	// Default port number
+	// }
+
+	// // Grab everything after slash (URI), if there is a specific uri
+	// if (strstr(temp_ptr, "/")) {
+	// 	char* uri_str = temp_ptr + strlen(host_port_str) + 1;  // Make uri be everything past the host, port and slash (the +1)
+	// 	strcpy(uri, uri_str);
+	// }
+	printf("\nRAN\n");
+
+	printf("\nserver_req: %s\n", server_req);
+
+	// printf("\nclient_req: %s\n", client_req);
+	// printf("method: %s\n", method);
+	// printf("hostname: %s\n", hostname);
+	// printf("port: %s\n", port);
+	// printf("uri: %s\n", uri);
+
+	return server_req;	// Return 1 string that's the request
 }
 
 // Based from echoservert_pre.c
@@ -55,9 +177,7 @@ void *thread(void *vargp)
 // // Step 2
 // void proxy_req_to_server() {}    
 
-// // Step 3
-// void server_res_to_proxy() {}    
-
+// // Step 3BUF_SIZE
 // // Step 4
 // void proxy_res_to_client() {}  
 
