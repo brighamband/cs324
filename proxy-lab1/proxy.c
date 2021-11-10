@@ -121,18 +121,6 @@ void *thread(void *vargp)
 	}
 }
 
-// // Step 1
-// void client_req_to_proxy() {}
-
-// // Step 2
-// void proxy_req_to_server() {}    
-
-// // Step 3
-// void server_res_to_proxy() {}
-
-// // Step 4
-// void proxy_res_to_client() {}  
-
 // Based off echoservert_pre.c
 int main(int argc, char **argv) {
 	int i, listenfd, connfd;
