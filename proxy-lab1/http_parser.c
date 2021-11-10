@@ -16,7 +16,7 @@ int is_complete_request(const char *request) {
 	return 0;
 }
 
-char* parse_http_request(char *request) {
+char* parse_client_request(char *request) {
 	char method[METHOD_SIZE];
 	char hostname[HOSTNAME_MAX_SIZE];
 	char port[PORT_MAX_SIZE];

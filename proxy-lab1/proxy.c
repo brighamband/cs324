@@ -28,7 +28,7 @@ sbuf_t sbuf; /* Shared buffer of connected descriptors */
 // For proxy.c - * You won't lose style points for including this long line in your code */
 // static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 
-char* get_http_request(int connfd) {
+char* get_client_request(int connfd) {
 	// Reads everything from the file descriptor into the buffer
 	char* buf = (char *) malloc(HTTP_REQUEST_MAX_SIZE);
 	Read(connfd, buf, HTTP_REQUEST_MAX_SIZE);
@@ -42,8 +42,8 @@ void *thread(void *vargp)
 	while (1) { 
 		int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
 		// echo_cnt(connfd);                /* Service client */
-		char* req = get_http_request(connfd);
-		parse_http_request(req);
+		char* req = get_client_request(connfd);
+		parse_client_request(req);
 		free(req);
 		close(connfd);
 	}
