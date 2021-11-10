@@ -32,7 +32,9 @@
 sbuf_t sbuf; /* Shared buffer of connected descriptors */
 
 // For proxy.c - * You won't lose style points for including this long line in your code */
-// static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
+static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
+static const char *conn_hdr = "Connection: close\r\n";
+static const char *proxy_conn_hdr = "Proxy-Connection: close\r\n";
 
 char* get_client_request(int connfd) {
 	// Reads everything from the file descriptor into the buffer
@@ -52,13 +54,7 @@ int is_complete_request(const char *request) {
 }
 
 // Based from http_parser
-char* parse_client_request(char *client_req) {
-	// char method[METHOD_SIZE];
-	// char hostname[HOSTNAME_MAX_SIZE];
-	// char port[PORT_MAX_SIZE];
-	// char uri[URI_MAX_SIZE];
-	char* saveptr;
-
+char* client_to_server_request(char *client_req) {
 	char* server_req = (char*) malloc(HTTP_REQUEST_MAX_SIZE);
 
 	// If client has not sent the full request, return 0 to show the request is not complete.
@@ -70,83 +66,42 @@ char* parse_client_request(char *client_req) {
 	char temp_client_req[500];
 	strcpy(temp_client_req, client_req);
 
+	// strtok_r
+	char* saveptr;	// Needed for strtok_r
 	char* token = strtok_r(temp_client_req, "\r\n", &saveptr);
 	
 	while (token != NULL) {
-		printf("TOKEN: %s\n", token);
-
 		// If on first line
 		if (strstr(token, "GET")) {
 			strncat(server_req, token, strlen(token) - 1);	// Append first line except last one (shouldn't be 1.1, but 1.0)
 			strcat(server_req, "0");	// 0 instead of 1 appended here so it's HTTP/1.0
+			strcat(server_req, "\r\n");	// End line
 		}
 
 		// Host
-		// if (strstr(token, "Host:")) {
-		// 	token += strlen("Host: ");	// Skip past Host and space
-		// 	strcpy(hostname, token);
-		// }
-		printf("Running\n");
+		else if (strstr(token, "Host:")) {
+			strcat(server_req, token);
+			strcat(server_req, "\r\n");	// End line
+		}
 
-		token = strtok_r(NULL, "\r\n", &saveptr);
+		// User Agent and other hard-coded tokens
+		else if (strstr(token, "User-Agent:")) {
+			strcat(server_req, user_agent_hdr);
+			strcat(server_req, conn_hdr);
+			strcat(server_req, proxy_conn_hdr);
+		}
+
+		// All other lines get appended to end
+		else {
+			strcat(server_req, token);
+			strcat(server_req, "\r\n");	// End line
+		}
+
+		token = strtok_r(NULL, "\r\n", &saveptr);	// Move to next line
 	}
-	// // Grab method
-	// char* temp_ptr = strtok(temp_request, " ");
-	// strcpy(method, temp_ptr);
+	strcat(server_req, "\r\n");	// Add final \r\n to show the end of request
 
-	// // Grab uri
-	// temp_ptr = temp_request + strlen(temp_ptr) + 1;
-	// strtok(temp_ptr, " ");
-	// strcpy(uri, temp_ptr);
-
-	// // Host
-	// temp_ptr = temp_request + strlen(temp_ptr);
-	// strtok(temp_ptr, " ");
-	// strtok(temp_ptr, " ");
-	// strcpy(hostname, temp_ptr);
-
-	// Grab entire path
-	// temp_ptr = temp_request + strlen(temp_ptr) + 1;  // Move past method
-	// temp_ptr += 7;	// Move past http://
-	// temp_ptr = strtok(temp_ptr, " ");
-
-	// // Grab everything before slash (Hostname and Port)
-	// char host_port_str[500];
-	// strcpy(host_port_str, temp_ptr);
-	// strtok(host_port_str, "/");
-
-	// // Host and Port
-	// char* port_str = strstr(host_port_str, ":");
-	// char host_str[500];
-	// strcpy(host_str, host_port_str);
-
-	// // If port was specified
-	// if (port_str != NULL) {
-	// 	strtok(host_str, ":");
-	// 	strcpy(hostname, host_str);
-	// 	strcpy(port, port_str + 1);	// Copy port_str into port, skipping the : colon
-	// } 
-	// // If just hostname
-	// else {	// If not colon, make port the default
-	// 	strcpy(hostname, host_str);
-	// 	strcpy(port, "80");	// Default port number
-	// }
-
-	// // Grab everything after slash (URI), if there is a specific uri
-	// if (strstr(temp_ptr, "/")) {
-	// 	char* uri_str = temp_ptr + strlen(host_port_str) + 1;  // Make uri be everything past the host, port and slash (the +1)
-	// 	strcpy(uri, uri_str);
-	// }
-
-	printf("\nserver_req: %s\n", server_req);
-
-	// printf("\nclient_req: %s\n", client_req);
-	// printf("method: %s\n", method);
-	// printf("hostname: %s\n", hostname);
-	// printf("port: %s\n", port);
-	// printf("uri: %s\n", uri);
-
-	return server_req;	// Return 1 string that's the request
+	return server_req;
 }
 
 // Based from echoservert_pre.c
@@ -156,9 +111,10 @@ void *thread(void *vargp)
 	while (1) { 
 		int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
 		char* client_req = get_client_request(connfd);
-		char* server_req = parse_client_request(client_req);
+		char* server_req = client_to_server_request(client_req);
 		if (server_req == NULL)
 			perror("Invalid HTTP Request");
+		printf("\nserver_req: %s\n", server_req);
 		free(client_req);
 		free(server_req);
 		close(connfd);
