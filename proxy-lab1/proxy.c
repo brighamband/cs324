@@ -39,14 +39,6 @@ static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64;
 static const char *conn_hdr = "Connection: close\r\n";
 static const char *proxy_conn_hdr = "Proxy-Connection: close\r\n";
 
-char* get_client_request(int connfd) {
-	// Reads everything from the file descriptor into the buffer
-	char* buf = (char *) malloc(HTTP_REQUEST_MAX_SIZE);
-	// FIXME
-	Read(connfd, buf, HTTP_REQUEST_MAX_SIZE);
-	return buf;
-}
-
 // From http_parser
 // Returns 1 if complete, 0 if incomplete
 int is_complete_request(const char *request) {
@@ -55,6 +47,23 @@ int is_complete_request(const char *request) {
 		return 1;
 	}
 	return 0;
+}
+
+char* get_client_request(int connfd) {
+	char* client_req = (char *) malloc(MAX_OBJECT_SIZE);
+	int cur_read = 0;	// Reused, num bytes read in a single call 
+	char* req_ptr = &client_req[0];
+
+	while ((cur_read = Read(connfd, req_ptr, MAX_OBJECT_SIZE)) > 0) {	// Keeps going while still has bytes being read or until it's complete
+		req_ptr += cur_read;
+
+		if (is_complete_request(client_req))
+			break;
+	}
+	strcat(client_req, "\0");	// Denote end of string 
+
+	printf("client_req: %s\n", client_req);
+	return client_req;
 }
 
 // Based from http_parser
@@ -147,7 +156,7 @@ char* reformat_client_request(char *client_req, char *hostname, char *port) {
 
 // Based from hw5 client.c
 // Sends off request from proxy to the server
-void send_request_to_server(char *hostname, char *port, char *server_req) {
+int send_request_to_server(char *hostname, char *port, char *server_req) {
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 	int sfd;
@@ -188,17 +197,51 @@ void send_request_to_server(char *hostname, char *port, char *server_req) {
 		chars_left -= chars_written;
 		str_ptr += chars_written;
 	}
+
+	return sfd;
+}
+
+char* receive_server_response(int sfd) {
+	char* server_res = (char *) malloc(MAX_OBJECT_SIZE);
+	int cur_read = 0;	// Reused, num bytes read in a single call 
+	char* res_ptr = &server_res[0];
+
+	while ((cur_read = Read(sfd, res_ptr, MAX_OBJECT_SIZE)) > 0) {
+		res_ptr += cur_read;
+	}
+	strcat(server_res, "\0");	// Denote end of string 
+
+	printf("server_res: %s\n", server_res);
+	return server_res;
+}
+
+void send_response_to_client(char* server_res, int connfd) {
+	char *str_ptr = server_res;
+	int chars_left = strlen(str_ptr);
+	while (chars_left > 0) {
+		int chars_written = Write(connfd, str_ptr, chars_left);
+		chars_left -= chars_written;
+		str_ptr += chars_written;
+	}
 }
 
 void act_as_server_and_client(int connfd) {
+	// Part 1 - Client -> Proxy
 	char* client_req = get_client_request(connfd);
 	char hostname[HOSTNAME_MAX_SIZE];
 	char port[PORT_MAX_SIZE];
-	char* server_req = reformat_client_request(client_req, hostname, port);
-	if (server_req == NULL)
-		perror("Invalid HTTP Request");
-	printf("\nserver_req:\n%s\n", server_req);
-	send_request_to_server(hostname, port, server_req);
+	char* server_req = reformat_client_request(client_req, hostname, port);	// Reformat in proxy
+
+	// Part 2 - Proxy -> Server
+	int sfd = send_request_to_server(hostname, port, server_req);
+
+	// Part 3 - Server -> Proxy
+	char* server_res = (char *) malloc(MAX_OBJECT_SIZE);
+	server_res = receive_server_response(sfd);
+
+	// Part 4 - Proxy -> Client
+	send_response_to_client(server_res, connfd);
+
 	free(client_req);
 	free(server_req);
 }
