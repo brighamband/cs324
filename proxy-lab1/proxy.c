@@ -14,7 +14,7 @@
 
 // From echoservert_pre.c
 #define MAXLINE 8192
-#define NTHREADS  10
+#define NTHREADS  100
 #define SBUFSIZE  20
 
 // For proxy.c - /* Recommended max cache and object sizes */
@@ -28,6 +28,9 @@
 #define URI_MAX_SIZE 4096
 #define METHOD_SIZE 32
 
+// From hw5 client.c
+#define BUF_SIZE 20000
+
 // For echoservert_pre.c thread
 sbuf_t sbuf; /* Shared buffer of connected descriptors */
 
@@ -39,6 +42,7 @@ static const char *proxy_conn_hdr = "Proxy-Connection: close\r\n";
 char* get_client_request(int connfd) {
 	// Reads everything from the file descriptor into the buffer
 	char* buf = (char *) malloc(HTTP_REQUEST_MAX_SIZE);
+	// FIXME
 	Read(connfd, buf, HTTP_REQUEST_MAX_SIZE);
 	return buf;
 }
@@ -54,54 +58,149 @@ int is_complete_request(const char *request) {
 }
 
 // Based from http_parser
-char* client_to_server_request(char *client_req) {
-	char* server_req = (char*) malloc(HTTP_REQUEST_MAX_SIZE);
-
+char* reformat_client_request(char *client_req, char *hostname, char *port) {
 	// If client has not sent the full request, return 0 to show the request is not complete.
 	if (is_complete_request(client_req) == 0) {
 		return NULL;
 	}
 
-	// Make non-const request variable
-	char temp_client_req[500];
-	strcpy(temp_client_req, client_req);
+	char* method = (char*) malloc(METHOD_SIZE);
+	char* uri = (char*) malloc(URI_MAX_SIZE);
 
-	// strtok_r
-	char* saveptr;	// Needed for strtok_r
-	char* token = strtok_r(temp_client_req, "\r\n", &saveptr);
+	/*
+	 *		Parse request to get the method, hostname, port, uri
+	 */
 	
-	while (token != NULL) {
-		// If on first line
-		if (strstr(token, "GET")) {
-			strncat(server_req, token, strlen(token) - 1);	// Append first line except last one (shouldn't be 1.1, but 1.0)
-			strcat(server_req, "0");	// 0 instead of 1 appended here so it's HTTP/1.0
-			strcat(server_req, "\r\n");	// End line
-		}
+	// Make non-const request variable
+	char temp_request[500];
+	strcpy(temp_request, client_req);
 
-		// Host
-		else if (strstr(token, "Host:")) {
-			strcat(server_req, token);
-			strcat(server_req, "\r\n");	// End line
-		}
+	// Grab method
+	char* temp_ptr = strtok(temp_request, " ");
+	strcpy(method, temp_ptr);
 
-		// User Agent and other hard-coded tokens
-		else if (strstr(token, "User-Agent:")) {
-			strcat(server_req, user_agent_hdr);
-			strcat(server_req, conn_hdr);
-			strcat(server_req, proxy_conn_hdr);
-		}
+	// Grab entire path
+	temp_ptr = temp_request + strlen(temp_ptr) + 1;  // Move past method
+	temp_ptr += 7;	// Move past http://
+	temp_ptr = strtok(temp_ptr, " ");
 
-		// All other lines get appended to end
-		else {
-			strcat(server_req, token);
-			strcat(server_req, "\r\n");	// End line
-		}
+	// Grab everything before slash (Hostname and Port)
+	char host_port_str[HOSTNAME_MAX_SIZE + PORT_MAX_SIZE];
+	strcpy(host_port_str, temp_ptr);
+	strtok(host_port_str, "/");
 
-		token = strtok_r(NULL, "\r\n", &saveptr);	// Move to next line
+	// Host and Port
+	char* port_str = strstr(host_port_str, ":");
+	char host_str[HOSTNAME_MAX_SIZE];
+	strcpy(host_str, host_port_str);
+
+	// If port was specified
+	if (port_str != NULL) {
+		strtok(host_str, ":");
+		strcpy(hostname, host_str);
+		strcpy(port, port_str + 1);	// Copy port_str into port, skipping the : colon
+	} 
+	// If just hostname
+	else {	// If not colon, make port the default
+		strcpy(hostname, host_str);
+		strcpy(port, "80");	// Default port number
 	}
-	strcat(server_req, "\r\n");	// Add final \r\n to show the end of request
+
+	// Grab everything after slash (URI), if there is a specific uri
+	if (strstr(temp_ptr, "/")) {
+		char* uri_str = temp_ptr + strlen(host_port_str) + 1;  // Make uri be everything past the host, port and slash (the +1)
+		strcpy(uri, uri_str);
+	}
+
+	/*
+	 *		Make new request
+	 */
+	char* server_req = (char*) malloc(HTTP_REQUEST_MAX_SIZE);
+
+	// Concat first line
+	strcat(server_req, method);
+	strcat(server_req, " /"); // Space and slash for uri
+	strcat(server_req, uri);
+	strcat(server_req, " HTTP/1.0");	// Version
+	strcat(server_req, "\r\n");	// End line
+
+	// Concat second line
+	strcat(server_req, "Host: ");
+	strcat(server_req, hostname);
+	strcat(server_req, ":");
+	strcat(server_req, port);
+	strcat(server_req, "\r\n");	// End line
+
+	// Concat hard-coded headers
+	strcat(server_req, user_agent_hdr);
+	strcat(server_req, conn_hdr);
+	strcat(server_req, proxy_conn_hdr);
+
+	// Add final \r\n to signify end of file
+	strcat(server_req, "\r\n");
+
+	free(method);
+	free(uri);
 
 	return server_req;
+}
+
+// Based from hw5 client.c
+// Sends off request from proxy to the server
+void send_request_to_server(char *hostname, char *port, char *server_req) {
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+	int sfd;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_INET;	// IPv4
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = 0;
+	hints.ai_protocol = IPPROTO_TCP;	// TCP
+
+	// Connect to server
+
+	// Returns a list of address structures, so we try each address until we successfully connect
+	Getaddrinfo(hostname, port, &hints, &result);
+
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+		sfd = socket(rp->ai_family, rp->ai_socktype,
+				rp->ai_protocol);
+		if (sfd == -1)
+			continue;
+		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+			break;                  /* Success */
+		close(sfd);
+	}
+	if (rp == NULL) {               /* No address succeeded */
+		fprintf(stderr, "Could not connect\n");
+		exit(EXIT_FAILURE);
+	}
+
+	freeaddrinfo(result);           /* No longer needed */
+
+	// Send request off to server
+
+	char *str_ptr = server_req;
+	int chars_left = strlen(str_ptr);
+	while (chars_left > 0) {
+		int chars_written = Write(sfd, str_ptr, chars_left);
+		chars_left -= chars_written;
+		str_ptr += chars_written;
+	}
+}
+
+void act_as_server_and_client(int connfd) {
+	char* client_req = get_client_request(connfd);
+	char hostname[HOSTNAME_MAX_SIZE];
+	char port[PORT_MAX_SIZE];
+	char* server_req = reformat_client_request(client_req, hostname, port);
+	if (server_req == NULL)
+		perror("Invalid HTTP Request");
+	printf("\nserver_req:\n%s\n", server_req);
+	send_request_to_server(hostname, port, server_req);
+	free(client_req);
+	free(server_req);
 }
 
 // Based from echoservert_pre.c
@@ -110,13 +209,7 @@ void *thread(void *vargp)
 	pthread_detach(pthread_self()); 
 	while (1) { 
 		int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
-		char* client_req = get_client_request(connfd);
-		char* server_req = client_to_server_request(client_req);
-		if (server_req == NULL)
-			perror("Invalid HTTP Request");
-		printf("\nserver_req:\n%s\n", server_req);
-		free(client_req);
-		free(server_req);
+		act_as_server_and_client(connfd);
 		close(connfd);
 	}
 }
