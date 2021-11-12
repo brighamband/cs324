@@ -201,23 +201,23 @@ int send_request_to_server(char *hostname, char *port, char *server_req) {
 	return sfd;
 }
 
-char* receive_server_response(int sfd) {
-	char* server_res = (char *) malloc(MAX_OBJECT_SIZE);
+int receive_server_response(int sfd, char* server_res) {
 	int cur_read = 0;	// Reused, num bytes read in a single call 
 	char* res_ptr = &server_res[0];
+	int num_bytes_read = 0;
 
 	while ((cur_read = Read(sfd, res_ptr, MAX_OBJECT_SIZE)) > 0) {
 		res_ptr += cur_read;
+		num_bytes_read += cur_read;
 	}
 	strcat(server_res, "\0");	// Denote end of string 
 
-	printf("server_res: %s\n", server_res);
-	return server_res;
+	return num_bytes_read;
 }
 
-void send_response_to_client(char* server_res, int connfd) {
+void send_response_to_client(char* server_res, int connfd, int num_bytes_read) {
 	char *str_ptr = server_res;
-	int chars_left = strlen(str_ptr);
+	int chars_left = num_bytes_read;
 	while (chars_left > 0) {
 		int chars_written = Write(connfd, str_ptr, chars_left);
 		chars_left -= chars_written;
@@ -237,10 +237,10 @@ void act_as_server_and_client(int connfd) {
 
 	// Part 3 - Server -> Proxy
 	char* server_res = (char *) malloc(MAX_OBJECT_SIZE);
-	server_res = receive_server_response(sfd);
+	int num_bytes_read = receive_server_response(sfd, server_res);
 
 	// Part 4 - Proxy -> Client
-	send_response_to_client(server_res, connfd);
+	send_response_to_client(server_res, connfd, num_bytes_read);
 
 	free(client_req);
 	free(server_req);
