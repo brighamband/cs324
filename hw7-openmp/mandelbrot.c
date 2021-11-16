@@ -31,10 +31,22 @@
   can do. It can do a lot.
 */
 
+/*
+1.
+  a) Number of virtual cores on machine:
+          FIXME
+  b) Compute Times:
+          1 Thread:     FIXME
+          2 Threads:    FIXME
+          4 Threads:    FIXME
+          8 Threads:    FIXME
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 int main(int argc, char* argv[])
 {
@@ -78,6 +90,13 @@ int main(int argc, char* argv[])
   double u, v; /* Coordinates of the iterated point. */
   int i,j; /* Pixel counters */
   int k; /* Iteration counter */
+
+  char** results = (char **) malloc(yres * sizeof(char *));
+  for (j = 0; j < yres; j++)
+    results[j] = (char *) malloc(xres * sizeof(char));
+  // char* buf = (char *) malloc(BUFSIZ);
+  // char* offset = &buf[0];
+
   for (j = 0; j < yres; j++) {
     y = ymax - j * dy;
     for(i = 0; i < xres; i++) {
@@ -97,7 +116,12 @@ int main(int argc, char* argv[])
       if (k >= maxiter) {
         /* interior */
         const unsigned char black[] = {0, 0, 0, 0, 0, 0};
-        fwrite (black, 6, 1, fp);
+
+        // Save bytes in buf
+        // memcpy(offset, black, sizeof(black));
+        // offset += sizeof(black);
+        memcpy(&results[i][j], black, sizeof(black));
+        // fwrite (black, 6, 1, fp);
       }
       else {
         /* exterior */
@@ -108,10 +132,28 @@ int main(int argc, char* argv[])
         color[3] = k & 255;
         color[4] = k >> 8;
         color[5] = k & 255;
-        fwrite(color, 6, 1, fp);
+
+        // Save bytes in buf
+        // memcpy(offset, color, sizeof(color));
+        // offset += sizeof(color);
+        memcpy(&results[i][j], color, sizeof(color));
+        // fwrite(color, 6, 1, fp);
       };
     }
   }
+  // Move all bytes from buffer into fp
+  // fwrite(buf, 1, strlen(buf), fp);  // FIXME - might have to add up total bytes instead of strlen(buf)
+  for (j = 0; j < yres; j++) {
+    for(i = 0; i < xres; i++) {
+      fwrite(&results[i][j], 6, 1, fp);
+    }
+  }
+
+  // free(buf);
+  for (j = 0; j < yres; j++)
+    free(results[j]);
+  free(results);
+
   fclose(fp);
   return 0;
 }
