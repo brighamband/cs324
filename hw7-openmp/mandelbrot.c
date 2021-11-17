@@ -91,11 +91,11 @@ int main(int argc, char* argv[])
   int i,j; /* Pixel counters */
   int k; /* Iteration counter */
 
-  char** results = (char **) malloc(yres * sizeof(char *));
-  for (j = 0; j < yres; j++)
-    results[j] = (char *) malloc(xres * sizeof(char));
-  // char* buf = (char *) malloc(BUFSIZ);
-  // char* offset = &buf[0];
+  // char** results = (char **) malloc(yres * sizeof(char *));
+  // for (j = 0; j < yres; j++)
+  //   results[j] = (char *) malloc(xres * sizeof(char));
+  char* buf = (char *) malloc(xres * yres * 6);
+  int offset = 0;
 
   for (j = 0; j < yres; j++) {
     y = ymax - j * dy;
@@ -118,9 +118,9 @@ int main(int argc, char* argv[])
         const unsigned char black[] = {0, 0, 0, 0, 0, 0};
 
         // Save bytes in buf
-        // memcpy(offset, black, sizeof(black));
-        // offset += sizeof(black);
-        memcpy(&results[i][j], black, sizeof(black));
+        memcpy(buf + offset, black, sizeof(black));
+        offset += sizeof(black);
+        // memcpy(&results[i][j], black, sizeof(black));
         // fwrite (black, 6, 1, fp);
       }
       else {
@@ -134,25 +134,25 @@ int main(int argc, char* argv[])
         color[5] = k & 255;
 
         // Save bytes in buf
-        // memcpy(offset, color, sizeof(color));
-        // offset += sizeof(color);
-        memcpy(&results[i][j], color, sizeof(color));
+        memcpy(buf + offset, color, sizeof(color));
+        offset += sizeof(color);
+        // memcpy(&results[i][j], color, sizeof(color));
         // fwrite(color, 6, 1, fp);
       };
     }
   }
   // Move all bytes from buffer into fp
-  // fwrite(buf, 1, strlen(buf), fp);  // FIXME - might have to add up total bytes instead of strlen(buf)
-  for (j = 0; j < yres; j++) {
-    for(i = 0; i < xres; i++) {
-      fwrite(&results[i][j], 6, 1, fp);
-    }
-  }
+  fwrite(buf, strlen(buf), 1, fp);  // FIXME - might have to add up total bytes instead of strlen(buf)
+  // for (j = 0; j < yres; j++) {
+  //   for(i = 0; i < xres; i++) {
+  //     fwrite(&results[i][j], 6, 1, fp);
+  //   }
+  // }
 
-  // free(buf);
-  for (j = 0; j < yres; j++)
-    free(results[j]);
-  free(results);
+  // // free(buf);
+  // for (j = 0; j < yres; j++)
+  //   free(results[j]);
+  // free(results);
 
   fclose(fp);
   return 0;
