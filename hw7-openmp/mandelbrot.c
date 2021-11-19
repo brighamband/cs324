@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
   double start, end;
   start = omp_get_wtime();
 
-  #pragma omp parallel for private(i) private(j) num_threads(nthreads)
+  #pragma omp parallel for private(i,j) num_threads(nthreads)
   for (j = 0; j < yres; j++) {
     y = ymax - j * dy;
     for(i = 0; i < xres; i++) {
