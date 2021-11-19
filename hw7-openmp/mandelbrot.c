@@ -93,9 +93,6 @@ int main(int argc, char* argv[])
   int i,j; /* Pixel counters */
   int k; /* Iteration counter */
 
-  // char** results = (char **) malloc(yres * sizeof(char *));
-  // for (j = 0; j < yres; j++)
-  //   results[j] = (char *) malloc(xres * sizeof(char) * 6);
   int BYTE_RES = xres * yres * PIXEL_SIZE;
   char* buf = (char *) malloc(BYTE_RES);
   int offset = 0;
@@ -117,9 +114,7 @@ int main(int argc, char* argv[])
       };
 
       // Recalculate the offset
-      // offset = (i + 1) * (j + 1) * PIXEL_SIZE;
       offset = (j * xres + i) * PIXEL_SIZE;
-      // offset = (i * PIXEL_SIZE) + j;
 
       /* compute  pixel color and write it to file */
       if (k >= maxiter) {
@@ -128,9 +123,6 @@ int main(int argc, char* argv[])
 
         // Save bytes in buf
         memcpy(buf + offset, black, sizeof(black));
-        // offset += sizeof(black);
-        // memcpy(&results[i][j], black, sizeof(black));
-        // fwrite (black, 6, 1, fp);
       }
       else {
         /* exterior */
@@ -144,24 +136,14 @@ int main(int argc, char* argv[])
 
         // Save bytes in buf
         memcpy(buf + offset, color, sizeof(color));
-        // offset += sizeof(color);
-        // memcpy(&results[i][j], color, sizeof(color));
-        // fwrite(color, 6, 1, fp);
       };
     }
   }
   // Move all bytes from buffer into fp
   fwrite(buf, BYTE_RES, 1, fp);  // FIXME - might have to add up total bytes instead of strlen(buf)
-  // for (j = 0; j < yres; j++) {
-  //   for(i = 0; i < xres; i++) {
-  //     fwrite(&results[i][j], 6, 1, fp);
-  //   }
-  // }
 
+  // Clean up malloc
   free(buf);
-  // for (j = 0; j < yres; j++)
-  //   free(results[j]);
-  // free(results);
 
   fclose(fp);
   return 0;
