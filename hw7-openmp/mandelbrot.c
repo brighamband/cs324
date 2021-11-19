@@ -34,12 +34,13 @@
 /*
 1.
   a) Number of virtual cores on machine:
-          FIXME
+          20
+          Got from running `cat /proc/cpuinfo  | grep ^processor | wc -l`
   b) Compute Times:
-          1 Thread:     FIXME
-          2 Threads:    FIXME
-          4 Threads:    FIXME
-          8 Threads:    FIXME
+          1 Thread:     15.55 seconds
+          2 Threads:    8.19 seconds
+          4 Threads:    4.79 seconds
+          8 Threads:    2.81 seconds
 */
 
 #include <stdio.h>
@@ -47,8 +48,10 @@
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
+#include <omp.h>
 
 #define PIXEL_SIZE 6
+#define nthreads 4
 
 int main(int argc, char* argv[])
 {
@@ -97,6 +100,11 @@ int main(int argc, char* argv[])
   char* buf = (char *) malloc(BYTE_RES);
   int offset = 0;
 
+  // Added timing vars
+  double start, end;
+  start = omp_get_wtime();
+
+  #pragma omp parallel for private(i) private(j) num_threads(nthreads)
   for (j = 0; j < yres; j++) {
     y = ymax - j * dy;
     for(i = 0; i < xres; i++) {
@@ -139,11 +147,16 @@ int main(int argc, char* argv[])
       };
     }
   }
+  // Add end time results
+  end = omp_get_wtime();
+  printf("TIME: %f seconds\n", end - start);
+
   // Move all bytes from buffer into fp
   fwrite(buf, BYTE_RES, 1, fp);  // FIXME - might have to add up total bytes instead of strlen(buf)
 
   // Clean up malloc
   free(buf);
+
 
   fclose(fp);
   return 0;
