@@ -34,7 +34,8 @@
 /*
 1.
   a) Number of virtual cores on machine:
-          FIXME
+          20
+          Got from running `cat /proc/cpuinfo  | grep ^processor | wc -l`
   b) Compute Times:
           1 Thread:     FIXME
           2 Threads:    FIXME
