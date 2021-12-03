@@ -41,7 +41,7 @@ void handle_new_connection(int efd, struct epoll_event *event) {
 	int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
 
-	int connfd = accept(event->data.fd, (struct sockaddr *)(&in_addr), &addr_size);
+    int connfd = Accept(event->data.fd, (struct sockaddr *)(&in_addr), &addr_size);
 
 	/* get the client's IP addr and port num */
 	int s = getnameinfo ((struct sockaddr *)&in_addr, addr_size,
@@ -104,7 +104,9 @@ void send_response() {
 }
 
 int main(int argc, char **argv) {
-    int listenfd, connfd;
+    int efd, listenfd;
+    struct epoll_event event, *events;
+    struct client_info *active_event;
 
     // Return if bad arguments
     if (argc < 2) {
@@ -113,17 +115,50 @@ int main(int argc, char **argv) {
     }
 
     // Create an epoll instance
-    int efd = epoll_create1(0);
-    if(efd < 0) {
+    if(efd = epoll_create1(0) < 0) {
         printf("Unable to create epoll fd\n");
         exit(1);
     }
 
     // Set up listen socket
+    listenfd = Open_listenfd(argv[1]);
 
-    // we only accept IN and ET
-    // epoll_ctl
-    // events calloc
+    // Make listen socket non-blocking
+    if (fcntl(listenfd, F_SETFL, fcntl(listenfd, F_GETFL, 0) | O_NONBLOCK) < 0) {
+		fprintf(stderr, "error setting socket option\n");
+		exit(1);
+	}
+
+    // Register listen socket with epoll instance for reading
+    event.data.fd = listenfd;
+    event.events = EPOLLIN | EPOLLET;
+	if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
+		fprintf(stderr, "error adding event\n");
+		exit(1);
+	}
+
+    /* Events buffer used by epoll_wait to list triggered events */
+    events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
+
+    while(1) {
+        int num_events = epoll_wait(efd, events, MAX_EVENTS, 1000);  // FIXME - is the 1000 right?  Milliseconds
+
+        for (int i = 0; i < num_events; i++) {
+            active_event = (struct client_info *)(events[i].data.ptr);
+
+            // Skip over unneeded events
+            if ((events[i].events & EPOLLERR) ||
+					(events[i].events & EPOLLHUP) ||
+					(events[i].events & EPOLLRDHUP)) {
+				fprintf (stderr, "epoll error on %s\n", active_event->desc);
+				close(active_event->fd);
+				free(active_event);
+				continue;
+			}
+        }
+
+
+    }
     // infinite while
         // epoll_wait (returns num of events)
         // for n in events
