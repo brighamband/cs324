@@ -108,7 +108,7 @@ void send_response() {
 }
 
 int main(int argc, char **argv) {
-    int efd, listenfd;
+    int efd, listenfd, connfd;
     struct epoll_event event, *events;
 
     // Return if bad arguments
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
         int num_events = epoll_wait(efd, events, MAX_EVENTS, 1000);  // FIXME - is the 1000 right?  Milliseconds
 
         for (int i = 0; i < num_events; i++) {
-            event_data_t active_event = (struct event_data_t *) events[i].data.ptr;
+            event_data_t* active_event = (event_data_t *) events[i].data.ptr;
 
             // Skip over active event if ER, HUP, or RDHUP
             if ((events[i].events & EPOLLERR) ||
@@ -161,16 +161,15 @@ int main(int argc, char **argv) {
 
             // When client wants to connect to proxy
             else if (events[i].data.fd == listenfd) {
-                // **** handle new connection (mostly copy)
-                // initialize state struct (0s or empty for all except event->state = STATE_READ_REQ)
+                connfd = handle_new_connection(efd, &events[i]);
+                init_event_data(efd);
                 // event_data_t *event_data_ptr = init_event_data(77);
                 // register struct -- non-blocking
             }
 
+            // Every other type of connection
             else {
-                /*FIXME*/int event_idx = find_event(events[i].data.fd);
-                // switch cases, active_event->state
-                switch (events[event_idx].state/*FIXME*/) {
+                switch (active_event->state) {
                     // 1.  Client -> Proxy
                     case STATE_READ_REQ:
                         read_request();
