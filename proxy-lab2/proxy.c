@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include "csapp.h"
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
@@ -33,48 +36,22 @@ typedef struct {
     unsigned int bytes_written_to_client;
 } event_data_t;
 
-// void handle_new_connection(int efd, struct epoll_event *event)
-// {
-// 	struct sockaddr_in in_addr;
-// 	int addr_size = sizeof(in_addr);
-// 	char hbuf[MAXLINE], sbuf[MAXLINE];
+void handle_new_connection(int efd, struct epoll_event *event) {
+	struct sockaddr_in in_addr;
+	int addr_size = sizeof(in_addr);
+	char hbuf[MAXLINE], sbuf[MAXLINE];
 
-// 	int connfd = accept(event->data.fd, (struct sockaddr *)(&in_addr), &addr_size);
+	int connfd = accept(event->data.fd, (struct sockaddr *)(&in_addr), &addr_size);
 
-// 	/* get the client's IP addr and port num */
-// 	int s = getnameinfo ((struct sockaddr *)&in_addr, addr_size,
-//                                    hbuf, sizeof hbuf,
-//                                    sbuf, sizeof sbuf,
-//                                    NI_NUMERICHOST | NI_NUMERICSERV);
-// 	if (s == 0)
-// 	{
-// 	    printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
-// 	}
-
-
-// 	struct epoll_event event;
-// 	event.data.fd = connfd;
-// 	event.events = EPOLLIN;
-
-// 	/* Make the incoming socket non-blocking and add it to the
-// 	 list of fds to monitor. */
-// 	int flags = fcntl (connfd, F_GETFL, 0);
-// 	flags |= O_NONBLOCK;
-// 	fcntl (connfd, F_SETFL, flags);
-
-// 	if (g_edge_triggered)
-// 	{
-// 		event.events = EPOLLIN | EPOLLET;  
-// 	}
-
-// 	s = epoll_ctl (efd, EPOLL_CTL_ADD, connfd, &event);
-// 	if (s == -1)
-// 	{
-// 	  perror ("epoll_ctl");
-// 	  abort ();
-// 	}
-
-// }
+	/* get the client's IP addr and port num */
+	int s = getnameinfo ((struct sockaddr *)&in_addr, addr_size,
+                                   hbuf, sizeof hbuf,
+                                   sbuf, sizeof sbuf,
+                                   NI_NUMERICHOST | NI_NUMERICSERV);
+	if (s == 0) {
+	    printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
+	}
+}
 
 event_data_t* init_event_data(int efd/*, struct epoll_event *event*/) {
     event_data_t event_data = {
@@ -126,10 +103,24 @@ void send_response() {
     // set state to next state
 }
 
-int main()
-{
-    init_event_data(77);
-    // epoll creat1
+int main(int argc, char **argv) {
+    int listenfd, connfd;
+
+    // Return if bad arguments
+    if (argc < 2) {
+        printf("Usage: %s portnumber\n", argv[0]);
+        exit(1);
+    }
+
+    // Create an epoll instance
+    int efd = epoll_create1(0);
+    if(efd < 0) {
+        printf("Unable to create epoll fd\n");
+        exit(1);
+    }
+
+    // Set up listen socket
+
     // we only accept IN and ET
     // epoll_ctl
     // events calloc
@@ -142,6 +133,8 @@ int main()
             // elif fd == listenfd
                 // **** handle new connection (mostly copy)
                 // initialize state struct (0s or empty for all except event->state = STATE_READ_REQ)
+                // event_data_t *event_data_ptr = init_event_data(77);
+                // register struct -- non-blocking
             // else
                 // switch cases, active_event->state
 
