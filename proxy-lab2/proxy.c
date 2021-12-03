@@ -36,7 +36,9 @@ typedef struct {
     unsigned int bytes_written_to_client;
 } event_data_t;
 
-void handle_new_connection(int efd, struct epoll_event *event) {
+event_data_t events[MAX_EVENTS];
+
+int handle_new_connection(int efd, struct epoll_event *event) {
 	struct sockaddr_in in_addr;
 	int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
@@ -51,6 +53,8 @@ void handle_new_connection(int efd, struct epoll_event *event) {
 	if (s == 0) {
 	    printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
 	}
+
+    return connfd;
 }
 
 event_data_t* init_event_data(int efd/*, struct epoll_event *event*/) {
@@ -61,7 +65,7 @@ event_data_t* init_event_data(int efd/*, struct epoll_event *event*/) {
         .host = "",
         .port = "",
         .server_request = "",
-        .state = 0,
+        .state = STATE_READ_REQ,
         .bytes_read_from_client = 0,
         .bytes_to_write_server = 0,
         .bytes_written_to_server = 0,
@@ -106,7 +110,6 @@ void send_response() {
 int main(int argc, char **argv) {
     int efd, listenfd;
     struct epoll_event event, *events;
-    struct client_info *active_event;
 
     // Return if bad arguments
     if (argc < 2) {
@@ -144,35 +147,54 @@ int main(int argc, char **argv) {
         int num_events = epoll_wait(efd, events, MAX_EVENTS, 1000);  // FIXME - is the 1000 right?  Milliseconds
 
         for (int i = 0; i < num_events; i++) {
-            active_event = (struct client_info *)(events[i].data.ptr);
+            event_data_t active_event = (struct event_data_t *) events[i].data.ptr;
 
-            // Skip over unneeded events
+            // Skip over active event if ER, HUP, or RDHUP
             if ((events[i].events & EPOLLERR) ||
 					(events[i].events & EPOLLHUP) ||
 					(events[i].events & EPOLLRDHUP)) {
-				fprintf (stderr, "epoll error on %s\n", active_event->desc);
-				close(active_event->fd);
+				fprintf (stderr, "epoll error\n");
+				close(events[i].data.fd);
 				free(active_event);
 				continue;
 			}
-        }
 
-
-    }
-    // infinite while
-        // epoll_wait (returns num of events)
-        // for n in events
-            // active_event = state*
-            // if ER, HUP, RDHUP
-                // throw err
-            // elif fd == listenfd
+            // When client wants to connect to proxy
+            else if (events[i].data.fd == listenfd) {
                 // **** handle new connection (mostly copy)
                 // initialize state struct (0s or empty for all except event->state = STATE_READ_REQ)
                 // event_data_t *event_data_ptr = init_event_data(77);
                 // register struct -- non-blocking
-            // else
-                // switch cases, active_event->state
+            }
 
+            else {
+                /*FIXME*/int event_idx = find_event(events[i].data.fd);
+                // switch cases, active_event->state
+                switch (events[event_idx].state/*FIXME*/) {
+                    // 1.  Client -> Proxy
+                    case STATE_READ_REQ:
+                        read_request();
+
+                    // 2.  Proxy -> Server
+                    case STATE_SEND_REQ:
+                        send_request();
+
+                    // 3.  Server -> Proxy
+                    case STATE_READ_RES:
+                        read_response();
+
+                    // 4.  Proxy -> Client
+                    case STATE_SEND_RES:
+                        send_response();
+
+                    default:
+                        break;
+                }
+            }
+        }
+
+
+    }
 
     printf("%s", user_agent_hdr);
 
