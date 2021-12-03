@@ -162,9 +162,21 @@ int main(int argc, char **argv) {
             // When client wants to connect to proxy
             else if (events[i].data.fd == listenfd) {
                 connfd = handle_new_connection(efd, &events[i]);
-                init_event_data(efd);
-                // event_data_t *event_data_ptr = init_event_data(77);
-                // register struct -- non-blocking
+                active_event = init_event_data(efd);
+
+                active_event->client_socket_fd = connfd;
+
+                // Register struct as non-blocking
+                int flags = fcntl (connfd, F_GETFL, 0);
+                flags |= O_NONBLOCK;
+                fcntl (connfd, F_SETFL, flags);
+
+                events[i].data.ptr = active_event;
+                events[i].events = EPOLLIN | EPOLLET;
+                if (epoll_ctl(efd, EPOLL_CTL_ADD, connfd, &events[i]) < 0) {
+                    fprintf(stderr, "error adding event\n");
+                    exit(1);
+                }            
             }
 
             // Every other type of connection
