@@ -1,8 +1,12 @@
-#include <stdio.h>
 #include "csapp.h"
+#include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+
 
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
@@ -40,7 +44,7 @@ event_data_t events[MAX_EVENTS];
 
 int handle_new_connection(int efd, struct epoll_event *event) {
 	struct sockaddr_in in_addr;
-	int addr_size = sizeof(in_addr);
+	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
 
     int connfd = Accept(event->data.fd, (struct sockaddr *)(&in_addr), &addr_size);
@@ -118,7 +122,7 @@ int main(int argc, char **argv) {
     }
 
     // Create an epoll instance
-    if(efd = epoll_create1(0) < 0) {
+    if((efd = epoll_create1(0)) < 0) {
         printf("Unable to create epoll fd\n");
         exit(1);
     }
