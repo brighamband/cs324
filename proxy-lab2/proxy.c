@@ -32,7 +32,9 @@ typedef struct {
     char buffer[MAX_OBJECT_SIZE];
     char host[MAX_HOST_SIZE];
     char port[MAX_PORT_SIZE];
+    // FIXME -- Maybe store more data
     char server_request[MAX_OBJECT_SIZE];
+    char server_response[MAX_OBJECT_SIZE];
     unsigned int state;
     unsigned int bytes_read_from_client;
     unsigned int bytes_to_write_server;
@@ -42,7 +44,7 @@ typedef struct {
 
 event_data_t events[MAX_EVENTS];
 
-int handle_new_connection(int efd, struct epoll_event *event) {
+int connect_to_client(int efd, struct epoll_event *event) {
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
@@ -61,32 +63,34 @@ int handle_new_connection(int efd, struct epoll_event *event) {
     return connfd;
 }
 
-event_data_t* init_event_data(int efd/*, struct epoll_event *event*/) {
-    event_data_t event_data = {
-        .client_socket_fd = efd,
-        .server_socket_fd = 0,
-        .buffer = "",
-        .host = "",
-        .port = "",
-        .server_request = "",
-        .state = STATE_READ_REQ,
-        .bytes_read_from_client = 0,
-        .bytes_to_write_server = 0,
-        .bytes_written_to_server = 0,
-        .bytes_written_to_client = 0,
-    };
-    event_data_t *event_data_ptr = &event_data;
-    return event_data_ptr;
+// Initialize event data for new event to be sent through proxy
+void init_event_data(event_data_t* event, int connfd) {
+    event->client_socket_fd = connfd,
+    event->server_socket_fd = 0,
+    memset(event->buffer, 0, MAX_OBJECT_SIZE);
+    memset(event->host, 0, MAX_OBJECT_SIZE);
+    memset(event->port, 0, MAX_OBJECT_SIZE);
+    memset(event->server_request, 0, MAX_OBJECT_SIZE);
+    memset(event->server_response, 0, MAX_OBJECT_SIZE);
+    event->state = STATE_READ_REQ,
+    event->bytes_read_from_client = 0,
+    event->bytes_to_write_server = 0,
+    event->bytes_written_to_server = 0,
+    event->bytes_written_to_client = 0,
 }
 
 // 1.  Client -> Proxy
-void read_request() {
+void read_request(event_data_t* event) {
+    // use event->client_socket_fd
+
+    // Parse http request (use code from before)
     // Call listen
     // Call accept
     // Loop while it's not \r\n\r\n
     // Call read, and pass in the fd you returned from calls above
 
     // set state to next state
+    event->state = STATE_SEND_REQ;
 }
 
 // 2.  Proxy -> Server
@@ -98,6 +102,8 @@ void send_request() {
 
 // 3.  Server -> Proxy
 void read_response() {
+    // use event->server_socket_fd
+
     // Loop while the return val from read is not 0
     // Call read
 
@@ -106,6 +112,8 @@ void read_response() {
 
 // 4.  Proxy -> Client
 void send_response() {
+    // use event->server_socket_fd
+
     // Call write to write bytes received from server to the client
 
     // set state to next state
@@ -165,19 +173,20 @@ int main(int argc, char **argv) {
 
             // When client wants to connect to proxy
             else if (events[i].data.fd == listenfd) {
-                connfd = handle_new_connection(efd, &events[i]);
-                active_event = init_event_data(efd);
+                connfd = connect_to_client(efd, &events[i]);
 
-                active_event->client_socket_fd = connfd;
+                // Initialize active event
+                active_event = (event_data_t *) malloc(sizeof(event_data_t));
+                init_event_data(active_event, connfd);
 
                 // Register struct as non-blocking
                 int flags = fcntl (connfd, F_GETFL, 0);
                 flags |= O_NONBLOCK;
                 fcntl (connfd, F_SETFL, flags);
 
-                events[i].data.ptr = active_event;
-                events[i].events = EPOLLIN | EPOLLET;
-                if (epoll_ctl(efd, EPOLL_CTL_ADD, connfd, &events[i]) < 0) {
+                event.data.ptr = active_event;
+                event.events = EPOLLIN | EPOLLET;
+                if (epoll_ctl(efd, EPOLL_CTL_ADD, connfd, &event) < 0) {
                     fprintf(stderr, "error adding event\n");
                     exit(1);
                 }            
@@ -188,19 +197,19 @@ int main(int argc, char **argv) {
                 switch (active_event->state) {
                     // 1.  Client -> Proxy
                     case STATE_READ_REQ:
-                        read_request();
+                        read_request(active_event);
 
                     // 2.  Proxy -> Server
                     case STATE_SEND_REQ:
-                        send_request();
+                        send_request(active_event);
 
                     // 3.  Server -> Proxy
                     case STATE_READ_RES:
-                        read_response();
+                        read_response(active_event);
 
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
-                        send_response();
+                        send_response(active_event);
 
                     default:
                         break;
@@ -213,11 +222,5 @@ int main(int argc, char **argv) {
 
     printf("%s", user_agent_hdr);
 
-    //
-    // else {
-        // switch(states[state_idx].state) {
-        //     read_request(efd, &states[states_idx]);
-        // }
-    // }
     return 0;
 }
