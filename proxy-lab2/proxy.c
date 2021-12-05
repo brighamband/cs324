@@ -45,6 +45,7 @@ typedef struct {
 event_data_t events[MAX_EVENTS];
 
 int connect_to_client(int efd, struct epoll_event *event) {
+    printf("top of connect_to_client\n");
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
@@ -153,13 +154,17 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+    printf("efd: %i\nlistenfd: %i\nevent.data.fd: %i\n", efd, listenfd, event.data.fd);
+
     /* Events buffer used by epoll_wait to list triggered events */
     events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
 
     while(1) {
-        int num_events = epoll_wait(efd, events, MAX_EVENTS, 1000);  // FIXME - is the 1000 right?  Milliseconds
-
+        printf("before epollwait\n");
+        int num_events = epoll_wait(efd, events, MAX_EVENTS, -1);
+        printf("num_events: %i", num_events);
         for (int i = 0; i < num_events; i++) {
+            printf("in for\n");
             event_data_t* active_event = (event_data_t *) events[i].data.ptr;
 
             // Skip over active event if ER, HUP, or RDHUP
