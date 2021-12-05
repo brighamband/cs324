@@ -64,23 +64,24 @@ int connect_to_client(int efd, struct epoll_event *event) {
 }
 
 // Initialize event data for new event to be sent through proxy
-void init_event_data(event_data_t* event, int connfd) {
-    event->client_socket_fd = connfd,
-    event->server_socket_fd = 0,
+void init_event_data(event_data_t *event, int connfd) {
+    event->client_socket_fd = connfd;
+    event->server_socket_fd = 0;
     memset(event->buffer, 0, MAX_OBJECT_SIZE);
     memset(event->host, 0, MAX_OBJECT_SIZE);
     memset(event->port, 0, MAX_OBJECT_SIZE);
     memset(event->server_request, 0, MAX_OBJECT_SIZE);
     memset(event->server_response, 0, MAX_OBJECT_SIZE);
-    event->state = STATE_READ_REQ,
-    event->bytes_read_from_client = 0,
-    event->bytes_to_write_server = 0,
-    event->bytes_written_to_server = 0,
-    event->bytes_written_to_client = 0,
+    event->state = STATE_READ_REQ;
+    event->bytes_read_from_client = 0;
+    event->bytes_to_write_server = 0;
+    event->bytes_written_to_server = 0;
+    event->bytes_written_to_client = 0;
 }
 
 // 1.  Client -> Proxy
-void read_request(event_data_t* event) {
+void read_request(event_data_t *event) {
+
     // use event->client_socket_fd
 
     // Parse http request (use code from before)
@@ -94,14 +95,14 @@ void read_request(event_data_t* event) {
 }
 
 // 2.  Proxy -> Server
-void send_request() {
+void send_request(event_data_t *event) {
     // Call write to write the bytes received from client to the server
 
     // set state to next state
 }
 
 // 3.  Server -> Proxy
-void read_response() {
+void read_response(event_data_t *event) {
     // use event->server_socket_fd
 
     // Loop while the return val from read is not 0
@@ -111,7 +112,7 @@ void read_response() {
 }
 
 // 4.  Proxy -> Client
-void send_response() {
+void send_response(event_data_t *event) {
     // use event->server_socket_fd
 
     // Call write to write bytes received from server to the client
