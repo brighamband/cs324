@@ -204,18 +204,22 @@ int main(int argc, char **argv) {
                     // 1.  Client -> Proxy
                     case STATE_READ_REQ:
                         read_request(active_event);
+                        // break;
 
                     // 2.  Proxy -> Server
                     case STATE_SEND_REQ:
                         send_request(active_event);
+                        // break;
 
                     // 3.  Server -> Proxy
                     case STATE_READ_RES:
                         read_response(active_event);
+                        // break;
 
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
                         send_response(active_event);
+                        // break;
 
                     default:
                         break;
