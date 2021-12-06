@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// curl -v --proxy http://localhost:23080 http://localhost:23081/home.html
+
 
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
@@ -278,17 +280,17 @@ void read_response(event_data_t *event) {
 	}
 	strcat(event->server_response, "\0");	// Denote end of string 
 
-    // set state to next state
-    event->state = STATE_SEND_RES;
+	// set state to next state
+	event->state = STATE_SEND_RES;
 }
 
 // 4.  Proxy -> Client
 void send_response(event_data_t *event) {
-    // use event->server_socket_fd
+	// use event->server_socket_fd
 
-    // Call write to write bytes received from server to the client
+	// Call write to write bytes received from server to the client
 
-    char *str_ptr = &event->server_response[0];
+	char *str_ptr = &event->server_response[0];
 	int chars_left = event->bytes_read_from_server;
 	while (chars_left > 0) {
 		int chars_written = Write(event->server_socket_fd, str_ptr, chars_left);
@@ -321,17 +323,17 @@ int main(int argc, char **argv) {
 
     // Make listen socket non-blocking
     if (fcntl(listenfd, F_SETFL, fcntl(listenfd, F_GETFL, 0) | O_NONBLOCK) < 0) {
-		fprintf(stderr, "error setting socket option\n");
-		exit(1);
-	}
+			fprintf(stderr, "error setting socket option\n");
+			exit(1);
+		}
 
     // Register listen socket with epoll instance for reading
     event.data.fd = listenfd;
     event.events = EPOLLIN | EPOLLET;
-	if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
-		fprintf(stderr, "error adding event\n");
-		exit(1);
-	}
+		if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
+			fprintf(stderr, "error adding event\n");
+			exit(1);
+		}
 
     printf("efd: %i\nlistenfd: %i\n", efd, listenfd);
 
