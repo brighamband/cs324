@@ -335,17 +335,14 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 
-    printf("efd: %i\nlistenfd: %i\n", efd, listenfd);
-
     /* Events buffer used by epoll_wait to list triggered events */
     events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
 
     while(1) {
-        printf("before epollwait\n");
         int num_events = epoll_wait(efd, events, MAX_EVENTS, -1);
-        printf("num_events: %i", num_events);
+        printf("num_events: %i\n", num_events);
         for (int i = 0; i < num_events; i++) {
-            printf("in for\n");
+            printf("inside for\n");
             event_data_t* active_event = (event_data_t *) events[i].data.ptr;
 
             // Skip over active event if ER, HUP, or RDHUP
