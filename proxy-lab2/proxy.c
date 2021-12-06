@@ -244,12 +244,11 @@ void send_request(event_data_t *event) {
 
     // Send request off to server
 
-	char *str_ptr = &event->server_request[0];
-	int chars_left = strlen(str_ptr);
-	while (chars_left > 0) {
-		int chars_written = Write(event->server_socket_fd, str_ptr, chars_left);
-		chars_left -= chars_written;
-		str_ptr += chars_written;
+	int chars_left = strlen(event->server_request);
+    int chars_written = 0;
+	while ((chars_written = Write(event->server_socket_fd, event->server_request + event->bytes_written_to_server, chars_left)) > 0) {
+		event->bytes_written_to_server += chars_written;
+        chars_left -= chars_written;
 	}
 
     // set state to next state
