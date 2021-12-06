@@ -3,27 +3,27 @@
           0 0 1 0 | 0 1 1 1 | 1 1 0 0
 
       b.
-          VPN:          9   (1001 binary)
+          VPN:          0x9   (1001 binary)
           TLBI:         1   (01 binary)
           TLBT:         2   (10 binary)
           TLB Hit:      N   (valid is 0 at set 1, tag 2)
           Page Fault:   N   (because valid is 1 in pg table for VPN 9)
-          PPN:          17  (Pg Table mapping for VPN of 9)
+          PPN:          0x17  (Pg Table mapping for VPN of 9)
 
       c.
-          FIXME??????
+          0 1 0 1 | 1 1 1 1 | 1 1 0 0
 
 9.12
       a.
           0 0 1 1 | 1 0 1 0 | 1 0 0 1
 
       b.
-          VPN:          14   (1110 in binary)
+          VPN:          0x14   (1110 in binary)
           TLBI:         2    (10 in binary)
           TLBT:         3    (11 in binary)
           TLB Hit:      N    (valid is 0 at set 2 and tag 3)   
           Page Fault:   N    (because valid is 1 in pg table for VPN E (hex14))    
-          PPN:          11   (Pg Table mapping for VPN of E (hex14))
+          PPN:          0x11   (Pg Table mapping for VPN of E (hex14))
 
       c.
-          FIXME??????
+            0 1 0 0 | 0 1 1 0 | 1 0 0 1
