@@ -50,7 +50,6 @@ typedef struct {
 event_data_t events[MAX_EVENTS];
 
 int connect_to_client(int efd, struct epoll_event *event) {
-    printf("top of connect_to_client\n");
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
@@ -242,6 +241,8 @@ void send_request(event_data_t *event) {
         chars_left -= chars_written;
 	}
 
+    // Epoll
+
     // set state to next state
     event->state = STATE_READ_RES;
 }
@@ -298,17 +299,17 @@ int main(int argc, char **argv) {
 
     // Make listen socket non-blocking
     if (fcntl(listenfd, F_SETFL, fcntl(listenfd, F_GETFL, 0) | O_NONBLOCK) < 0) {
-			fprintf(stderr, "error setting socket option\n");
-			exit(1);
-		}
+        fprintf(stderr, "error setting socket option\n");
+        exit(1);
+    }
 
     // Register listen socket with epoll instance for reading
     event.data.fd = listenfd;
     event.events = EPOLLIN | EPOLLET;
-		if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
-			fprintf(stderr, "error adding event\n");
-			exit(1);
-		}
+    if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
+        fprintf(stderr, "error adding event\n");
+        exit(1);
+    }
 
     /* Events buffer used by epoll_wait to list triggered events */
     events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
@@ -357,22 +358,22 @@ int main(int argc, char **argv) {
                     // 1.  Client -> Proxy
                     case STATE_READ_REQ:
                         read_request(active_event);
-                        // break;
+                        break;
 
                     // 2.  Proxy -> Server
                     case STATE_SEND_REQ:
                         send_request(active_event);
-                        // break;
+                        break;
 
                     // 3.  Server -> Proxy
                     case STATE_READ_RES:
                         read_response(active_event);
-                        // break;
+                        break;
 
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
                         send_response(active_event);
-                        // break;
+                        break;
 
                     default:
                         break;
@@ -383,7 +384,7 @@ int main(int argc, char **argv) {
 
     }
 
-    printf("%s", user_agent_hdr);
+    // Cleanup
 
     return 0;
 }
