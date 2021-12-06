@@ -15,6 +15,9 @@
 #define MAX_EVENTS 25
 #define MAX_HOST_SIZE 1024
 #define MAX_PORT_SIZE 16
+#define MAX_METHOD_SIZE 32
+#define MAX_URI_SIZE 4096
+
 
 // State enums
 #define STATE_READ_REQ 1
@@ -25,14 +28,17 @@
 
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
+static const char *conn_hdr = "Connection: close\r\n";
+static const char *proxy_conn_hdr = "Proxy-Connection: close\r\n";
 
 typedef struct {
     int client_socket_fd;
     int server_socket_fd;
-    char buffer[MAX_OBJECT_SIZE];
+    // char buffer[MAX_OBJECT_SIZE];
     char host[MAX_HOST_SIZE];
     char port[MAX_PORT_SIZE];
     // FIXME -- Maybe store more data
+    char client_request[MAX_OBJECT_SIZE];
     char server_request[MAX_OBJECT_SIZE];
     char server_response[MAX_OBJECT_SIZE];
     unsigned int state;
@@ -70,9 +76,10 @@ int connect_to_client(int efd, struct epoll_event *event) {
 void init_event_data(event_data_t *event, int connfd) {
     event->client_socket_fd = connfd;
     event->server_socket_fd = 0;
-    memset(event->buffer, 0, MAX_OBJECT_SIZE);
+    // memset(event->buffer, 0, MAX_OBJECT_SIZE);
     memset(event->host, 0, MAX_OBJECT_SIZE);
     memset(event->port, 0, MAX_OBJECT_SIZE);
+    memset(event->client_request, 0, MAX_OBJECT_SIZE);
     memset(event->server_request, 0, MAX_OBJECT_SIZE);
     memset(event->server_response, 0, MAX_OBJECT_SIZE);
     event->state = STATE_READ_REQ;
@@ -84,6 +91,98 @@ void init_event_data(event_data_t *event, int connfd) {
     event->bytes_read_from_server = 0;
 }
 
+int is_complete_request(const char *request) {
+	char *found_ptr = strstr(request, "\r\n\r\n");
+	if (found_ptr != NULL) {
+		return 1;
+	}
+	return 0;
+}
+
+void reformat_client_request(event_data_t *event) {
+	// If client has not sent the full request, return 0 to show the request is not complete.
+	if (is_complete_request(event->client_request) == 0) {
+		return NULL;
+	}
+
+	char* method = (char*) malloc(MAX_METHOD_SIZE);
+	char* uri = (char*) malloc(MAX_URI_SIZE);
+
+	/*
+	 *		Parse request to get the method, hostname, port, uri
+	 */
+	
+	// Make non-const request variable
+	char temp_request[MAX_OBJECT_SIZE];
+	strcpy(temp_request, event->client_request);
+
+	// Grab method
+	char* temp_ptr = strtok(temp_request, " ");
+	strcpy(method, temp_ptr);
+
+	// Grab entire path
+	temp_ptr = temp_request + strlen(temp_ptr) + 1;  // Move past method
+	temp_ptr += 7;	// Move past http://
+	temp_ptr = strtok(temp_ptr, " ");
+
+	// Grab everything before slash (Hostname and Port)
+	char host_port_str[MAX_HOST_SIZE + MAX_PORT_SIZE];
+	strcpy(host_port_str, temp_ptr);
+	strtok(host_port_str, "/");
+
+	// Host and Port
+	char* port_str = strstr(host_port_str, ":");
+	char host_str[MAX_HOST_SIZE];
+	strcpy(host_str, host_port_str);
+
+	// If port was specified
+	if (port_str != NULL) {
+		strtok(host_str, ":");
+		strcpy(event->host, host_str);
+		strcpy(event->port, port_str + 1);	// Copy port_str into port, skipping the : colon
+	} 
+	// If just hostname
+	else {	// If not colon, make port the default
+		strcpy(event->host, host_str);
+		strcpy(event->port, "80");	// Default port number
+	}
+
+	// Grab everything after slash (URI), if there is a specific uri
+	if (strstr(temp_ptr, "/")) {
+		char* uri_str = temp_ptr + strlen(host_port_str) + 1;  // Make uri be everything past the host, port and slash (the +1)
+		strcpy(uri, uri_str);
+	}
+
+	/*
+	 *		Make new request
+	 */
+
+	// Concat first line
+	strcat(event->server_request, method);
+	strcat(event->server_request, " /"); // Space and slash for uri
+	strcat(event->server_request, uri);
+	strcat(event->server_request, " HTTP/1.0");	// Version
+	strcat(event->server_request, "\r\n");	// End line
+
+	// Concat second line
+	strcat(event->server_request, "Host: ");
+	strcat(event->server_request, event->host);
+	strcat(event->server_request, ":");
+	strcat(event->server_request, event->port);
+	strcat(event->server_request, "\r\n");	// End line
+
+	// Concat hard-coded headers
+	strcat(event->server_request, user_agent_hdr);
+	strcat(event->server_request, conn_hdr);
+	strcat(event->server_request, proxy_conn_hdr);
+
+	// Add final \r\n to signify end of file
+	strcat(event->server_request, "\r\n");
+
+	free(method);
+	free(uri);
+}
+
 // 1.  Client -> Proxy
 void read_request(event_data_t *event) {
 
@@ -92,8 +191,25 @@ void read_request(event_data_t *event) {
     // Parse http request (use code from before)
     // Call listen
     // Call accept
+
+	int cur_read = 0;	// Reused, num bytes read in a single call 
+	char* req_ptr = &event->client_request[0];
+
+	while ((cur_read = Read(event->client_socket_fd, req_ptr, MAX_OBJECT_SIZE)) > 0) {	// Keeps going while still has bytes being read or until it's complete
+		req_ptr += cur_read;
+
+		if (is_complete_request(event->client_request))
+			break;
+	}
+	strcat(event->client_request, "\0");	// Denote end of string 
+
+	printf("client_req: %s\n", event->client_request);
+
     // Loop while it's not \r\n\r\n
     // Call read, and pass in the fd you returned from calls above
+
+    // Convert to server_request
+    reformat_client_request(event);
 
     // set state to next state
     event->state = STATE_SEND_REQ;
