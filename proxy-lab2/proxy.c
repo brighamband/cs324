@@ -102,7 +102,7 @@ int is_complete_request(const char *request) {
 void reformat_client_request(event_data_t *event) {
 	// If client has not sent the full request, return 0 to show the request is not complete.
 	if (is_complete_request(event->client_request) == 0) {
-		return NULL;
+		return;
 	}
 
 	char* method = (char*) malloc(MAX_METHOD_SIZE);
@@ -185,7 +185,6 @@ void reformat_client_request(event_data_t *event) {
 
 // 1.  Client -> Proxy
 void read_request(event_data_t *event) {
-
     // use event->client_socket_fd
 
     // Parse http request (use code from before)
