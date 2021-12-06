@@ -109,7 +109,18 @@ void read_response(event_data_t *event) {
     // Loop while the return val from read is not 0
     // Call read
 
+    int cur_read = 0;	// Reused, num bytes read in a single call 
+	char* res_ptr = &event->server_response[0];
+	int num_bytes_read = 0;
+
+	while ((cur_read = Read(event->server_socket_fd, res_ptr, MAX_OBJECT_SIZE)) > 0) {
+		res_ptr += cur_read;
+		num_bytes_read += cur_read;
+	}
+	strcat(event->server_response, "\0");	// Denote end of string 
+
     // set state to next state
+    event->state = STATE_SEND_RES;
 }
 
 // 4.  Proxy -> Client
