@@ -36,20 +36,15 @@ static const char *proxy_conn_hdr = "Proxy-Connection: close\r\n";
 typedef struct {
     int client_socket_fd;
     int server_socket_fd;
-    // char buffer[MAX_OBJECT_SIZE];
     char host[MAX_HOST_SIZE];
     char port[MAX_PORT_SIZE];
-    // FIXME -- Maybe store more data
     char client_request[MAX_OBJECT_SIZE];
     char server_request[MAX_OBJECT_SIZE];
     char server_response[MAX_OBJECT_SIZE];
     unsigned int state;
-    unsigned int bytes_read_from_client;
-    unsigned int bytes_to_write_server;
-    unsigned int bytes_written_to_server; // used
+    unsigned int bytes_written_to_server;
+    unsigned int bytes_read_from_server; 
     unsigned int bytes_written_to_client;
-    // Added
-    unsigned int bytes_read_from_server;  // used
 } event_data_t;
 
 event_data_t events[MAX_EVENTS];
@@ -78,19 +73,15 @@ int connect_to_client(int efd, struct epoll_event *event) {
 void init_event_data(event_data_t *event, int connfd) {
     event->client_socket_fd = connfd;
     event->server_socket_fd = 0;
-    // memset(event->buffer, 0, MAX_OBJECT_SIZE);
     memset(event->host, 0, MAX_OBJECT_SIZE);
     memset(event->port, 0, MAX_OBJECT_SIZE);
     memset(event->client_request, 0, MAX_OBJECT_SIZE);
     memset(event->server_request, 0, MAX_OBJECT_SIZE);
     memset(event->server_response, 0, MAX_OBJECT_SIZE);
     event->state = STATE_READ_REQ;
-    event->bytes_read_from_client = 0;
-    event->bytes_to_write_server = 0;
     event->bytes_written_to_server = 0;
-    event->bytes_written_to_client = 0;
-    // Added
     event->bytes_read_from_server = 0;
+    event->bytes_written_to_client = 0;
 }
 
 int is_complete_request(const char *request) {
@@ -274,12 +265,11 @@ void read_response(event_data_t *event) {
 // 4.  Proxy -> Client
 void send_response(event_data_t *event) {
 	// Call write to write bytes received from server to the client
-	char *str_ptr = &event->server_response[0];
 	int chars_left = event->bytes_read_from_server;
-	while (chars_left > 0) {
-		int chars_written = Write(event->client_socket_fd, str_ptr, chars_left);
+    int chars_written = 0;
+	while ((chars_written = Write(event->client_socket_fd, event->server_response + event->bytes_written_to_client, chars_left)) > 0) {
+        event->bytes_written_to_client += chars_written;
 		chars_left -= chars_written;
-		str_ptr += chars_written;
 	}
 
     // Close file descriptors, close epoll instance
