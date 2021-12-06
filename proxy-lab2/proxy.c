@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-    printf("efd: %i\nlistenfd: %i\nevent.data.fd: %i\n", efd, listenfd, event.data.fd);
+    printf("efd: %i\nlistenfd: %i\n", efd, listenfd);
 
     /* Events buffer used by epoll_wait to list triggered events */
     events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
