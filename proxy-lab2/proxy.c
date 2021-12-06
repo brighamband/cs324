@@ -212,6 +212,9 @@ void read_request(event_data_t *event) {
     // Convert to server_request
     reformat_client_request(event);
 
+	printf("server_req: %s\n", event->server_request);
+
+
     // set state to next state
     event->state = STATE_SEND_REQ;
 }
@@ -272,13 +275,16 @@ void read_response(event_data_t *event) {
     // Call read
 
     int cur_read = 0;	// Reused, num bytes read in a single call 
-	char* res_ptr = &event->server_response[0];
+	// char* res_ptr = &event->server_response[0];
 
-	while ((cur_read = Read(event->server_socket_fd, res_ptr, MAX_OBJECT_SIZE)) > 0) {
-		res_ptr += cur_read;
+	while ((cur_read = Read(event->server_socket_fd, event->server_response + event->bytes_read_from_server, MAX_OBJECT_SIZE)) > 0) {
+		// res_ptr += cur_read;
 		event->bytes_read_from_server += cur_read;
 	}
 	strcat(event->server_response, "\0");	// Denote end of string 
+
+    printf("Server response: %s\n", event->server_response);
+    printf("Server response: %i\n", event->bytes_read_from_server);
 
 	// set state to next state
 	event->state = STATE_SEND_RES;
@@ -286,20 +292,23 @@ void read_response(event_data_t *event) {
 
 // 4.  Proxy -> Client
 void send_response(event_data_t *event) {
-	// use event->server_socket_fd
+	// use event->client_socket_fd
 
 	// Call write to write bytes received from server to the client
 
 	char *str_ptr = &event->server_response[0];
 	int chars_left = event->bytes_read_from_server;
 	while (chars_left > 0) {
-		int chars_written = Write(event->server_socket_fd, str_ptr, chars_left);
+		int chars_written = Write(event->client_socket_fd, str_ptr, chars_left);
 		chars_left -= chars_written;
 		str_ptr += chars_written;
 	}
 
     // set state to next state MAY NOT BE NECESSARY FOR LAST ONE Maybe just need to ... 👇
     // Close file descriptor, close epoll instance
+
+    Close(event->client_socket_fd);
+    Close(event->server_socket_fd);
 }
 
 int main(int argc, char **argv) {
