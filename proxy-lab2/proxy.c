@@ -49,6 +49,21 @@ typedef struct {
 
 event_data_t events[MAX_EVENTS];
 
+void make_socket_nonblocking(int fd) {
+    if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK) < 0) {
+        unix_error("error setting socket option\n");
+    }
+}
+
+void register_socket_for_epoll_reading(struct epoll_event *event, int efd, int socket_fd) {
+    // event.data.fd = socket_fd;
+    // event.events = EPOLLIN | EPOLLET;
+    // if (epoll_ctl(efd, EPOLL_CTL_ADD, socket_fd, &event) < 0) {
+    //     fprintf(stderr, "error adding event\n");
+    //     exit(1);
+    // }
+}
+
 int connect_to_client(int efd, struct epoll_event *event) {
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
@@ -194,6 +209,17 @@ void read_request(event_data_t *event) {
 
 	printf("server_req: %s\n", event->server_request);
 
+    // Set up a new socket
+    int new_socket_fd = Open_clientfd(event->host, event->port);
+
+    // Use new socket to connect
+    // Connect(new_socket_fd, )
+
+    // Configure new socket as non-blocking
+    make_socket_nonblocking(new_socket_fd);
+
+    // Register the socket w/ epoll instance for writing
+
     // set state to next state
     event->state = STATE_SEND_REQ;
 }
@@ -241,7 +267,7 @@ void send_request(event_data_t *event) {
         chars_left -= chars_written;
 	}
 
-    // Epoll
+    // Register the socket with the epoll instance for reading
 
     // set state to next state
     event->state = STATE_READ_RES;
@@ -258,6 +284,8 @@ void read_response(event_data_t *event) {
 
     printf("Server response: %s\n", event->server_response);
     printf("Bytes read from server: %i\n", event->bytes_read_from_server);
+
+    // Register the client socket with the epoll instance for writing
 
 	// set state to next state
 	event->state = STATE_SEND_RES;
@@ -298,12 +326,14 @@ int main(int argc, char **argv) {
     listenfd = Open_listenfd(argv[1]);
 
     // Make listen socket non-blocking
-    if (fcntl(listenfd, F_SETFL, fcntl(listenfd, F_GETFL, 0) | O_NONBLOCK) < 0) {
-        fprintf(stderr, "error setting socket option\n");
-        exit(1);
-    }
+    make_socket_nonblocking(listenfd);
+    // if (fcntl(listenfd, F_SETFL, fcntl(listenfd, F_GETFL, 0) | O_NONBLOCK) < 0) {
+    //     fprintf(stderr, "error setting socket option\n");
+    //     exit(1);
+    // }
 
     // Register listen socket with epoll instance for reading
+    // register_socket_for_epoll_reading(event, efd, listenfd);
     event.data.fd = listenfd;
     event.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
@@ -358,22 +388,22 @@ int main(int argc, char **argv) {
                     // 1.  Client -> Proxy
                     case STATE_READ_REQ:
                         read_request(active_event);
-                        break;
+                        break; // Commenting these out makes it kinda work
 
                     // 2.  Proxy -> Server
                     case STATE_SEND_REQ:
                         send_request(active_event);
-                        break;
+                        break; // Commenting these out makes it kinda work
 
                     // 3.  Server -> Proxy
                     case STATE_READ_RES:
                         read_response(active_event);
-                        break;
+                        break; // Commenting these out makes it kinda work
 
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
                         send_response(active_event);
-                        break;
+                        break; // Commenting these out makes it kinda work
 
                     default:
                         break;
