@@ -187,18 +187,11 @@ void reformat_client_request(event_data_t *event) {
 
 // 1.  Client -> Proxy
 void read_request(event_data_t *event) {
-    // use event->client_socket_fd
-
-    // Parse http request (use code from before)
-    // Call listen
-    // Call accept
-
 	int cur_read = 0;	// Reused, num bytes read in a single call 
-	char* req_ptr = &event->client_request[0];
 
-	while ((cur_read = Read(event->client_socket_fd, req_ptr, MAX_OBJECT_SIZE)) > 0) {	// Keeps going while still has bytes being read or until it's complete
-		req_ptr += cur_read;
-
+    // Loop while it's not \r\n\r\n
+    // Call read, and pass in the fd you returned from calls above
+	while ((cur_read = Read(event->client_socket_fd, event->client_request + cur_read, MAX_OBJECT_SIZE)) > 0) {	// Keeps going while still has bytes being read or until it's complete
 		if (is_complete_request(event->client_request))
 			break;
 	}
@@ -206,14 +199,10 @@ void read_request(event_data_t *event) {
 
 	printf("client_req: %s\n", event->client_request);
 
-    // Loop while it's not \r\n\r\n
-    // Call read, and pass in the fd you returned from calls above
-
     // Convert to server_request
     reformat_client_request(event);
 
 	printf("server_req: %s\n", event->server_request);
-
 
     // set state to next state
     event->state = STATE_SEND_REQ;
