@@ -46,10 +46,10 @@ typedef struct {
     unsigned int state;
     unsigned int bytes_read_from_client;
     unsigned int bytes_to_write_server;
-    unsigned int bytes_written_to_server;
+    unsigned int bytes_written_to_server; // used
     unsigned int bytes_written_to_client;
     // Added
-    unsigned int bytes_read_from_server;
+    unsigned int bytes_read_from_server;  // used
 } event_data_t;
 
 event_data_t events[MAX_EVENTS];
@@ -257,22 +257,15 @@ void send_request(event_data_t *event) {
 
 // 3.  Server -> Proxy
 void read_response(event_data_t *event) {
-    // use event->server_socket_fd
-
     // Loop while the return val from read is not 0
-    // Call read
-
     int cur_read = 0;	// Reused, num bytes read in a single call 
-	// char* res_ptr = &event->server_response[0];
-
 	while ((cur_read = Read(event->server_socket_fd, event->server_response + event->bytes_read_from_server, MAX_OBJECT_SIZE)) > 0) {
-		// res_ptr += cur_read;
 		event->bytes_read_from_server += cur_read;
 	}
 	strcat(event->server_response, "\0");	// Denote end of string 
 
     printf("Server response: %s\n", event->server_response);
-    printf("Server response: %i\n", event->bytes_read_from_server);
+    printf("Bytes read from server: %i\n", event->bytes_read_from_server);
 
 	// set state to next state
 	event->state = STATE_SEND_RES;
@@ -280,10 +273,7 @@ void read_response(event_data_t *event) {
 
 // 4.  Proxy -> Client
 void send_response(event_data_t *event) {
-	// use event->client_socket_fd
-
 	// Call write to write bytes received from server to the client
-
 	char *str_ptr = &event->server_response[0];
 	int chars_left = event->bytes_read_from_server;
 	while (chars_left > 0) {
@@ -292,9 +282,7 @@ void send_response(event_data_t *event) {
 		str_ptr += chars_written;
 	}
 
-    // set state to next state MAY NOT BE NECESSARY FOR LAST ONE Maybe just need to ... 👇
-    // Close file descriptor, close epoll instance
-
+    // Close file descriptors, close epoll instance
     Close(event->client_socket_fd);
     Close(event->server_socket_fd);
 }
