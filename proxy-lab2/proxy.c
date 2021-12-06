@@ -40,6 +40,8 @@ typedef struct {
     unsigned int bytes_to_write_server;
     unsigned int bytes_written_to_server;
     unsigned int bytes_written_to_client;
+    // Added
+    unsigned int bytes_read_from_server;
 } event_data_t;
 
 event_data_t events[MAX_EVENTS];
@@ -78,6 +80,8 @@ void init_event_data(event_data_t *event, int connfd) {
     event->bytes_to_write_server = 0;
     event->bytes_written_to_server = 0;
     event->bytes_written_to_client = 0;
+    // Added
+    event->bytes_read_from_server = 0;
 }
 
 // 1.  Client -> Proxy
@@ -99,7 +103,48 @@ void read_request(event_data_t *event) {
 void send_request(event_data_t *event) {
     // Call write to write the bytes received from client to the server
 
+    struct addrinfo hints;
+	struct addrinfo *result, *rp;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_INET;	// IPv4
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = 0;
+	hints.ai_protocol = IPPROTO_TCP;	// TCP
+
+	// Connect to server
+
+	// Returns a list of address structures, so we try each address until we successfully connect
+	Getaddrinfo(event->host, event->port, &hints, &result);
+
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+		event->server_socket_fd = socket(rp->ai_family, rp->ai_socktype,
+				rp->ai_protocol);
+		if (event->server_socket_fd == -1)
+			continue;
+		if (connect(event->server_socket_fd, rp->ai_addr, rp->ai_addrlen) != -1)
+			break;                  /* Success */
+		close(event->server_socket_fd);
+	}
+	if (rp == NULL) {               /* No address succeeded */
+		fprintf(stderr, "Could not connect\n");
+		exit(EXIT_FAILURE);
+	}
+
+	freeaddrinfo(result);           /* No longer needed */
+
+    // Send request off to server
+
+	char *str_ptr = &event->server_request[0];
+	int chars_left = strlen(str_ptr);
+	while (chars_left > 0) {
+		int chars_written = Write(event->server_socket_fd, str_ptr, chars_left);
+		chars_left -= chars_written;
+		str_ptr += chars_written;
+	}
+
     // set state to next state
+    event->state = STATE_READ_RES;
 }
 
 // 3.  Server -> Proxy
@@ -111,11 +156,10 @@ void read_response(event_data_t *event) {
 
     int cur_read = 0;	// Reused, num bytes read in a single call 
 	char* res_ptr = &event->server_response[0];
-	int num_bytes_read = 0;
 
 	while ((cur_read = Read(event->server_socket_fd, res_ptr, MAX_OBJECT_SIZE)) > 0) {
 		res_ptr += cur_read;
-		num_bytes_read += cur_read;
+		event->bytes_read_from_server += cur_read;
 	}
 	strcat(event->server_response, "\0");	// Denote end of string 
 
@@ -129,7 +173,16 @@ void send_response(event_data_t *event) {
 
     // Call write to write bytes received from server to the client
 
-    // set state to next state
+    char *str_ptr = &event->server_response[0];
+	int chars_left = event->bytes_read_from_server;
+	while (chars_left > 0) {
+		int chars_written = Write(event->server_socket_fd, str_ptr, chars_left);
+		chars_left -= chars_written;
+		str_ptr += chars_written;
+	}
+
+    // set state to next state MAY NOT BE NECESSARY FOR LAST ONE Maybe just need to ... 👇
+    // Close file descriptor, close epoll instance
 }
 
 int main(int argc, char **argv) {
