@@ -26,4 +26,4 @@
           PPN:          0x11   (Pg Table mapping for VPN of E (hex14))
 
       c.
-            0 1 0 0 | 0 1 1 0 | 1 0 0 1
+          0 1 0 0 | 0 1 1 0 | 1 0 0 1
