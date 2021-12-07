@@ -27,6 +27,10 @@
 #define STATE_READ_RES 3
 #define STATE_SEND_RES 4
 
+// Socket enums
+#define READING 1
+#define WRITING 2
+
 
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
@@ -55,25 +59,21 @@ void make_socket_nonblocking(int fd) {
     }
 }
 
-void register_socket_for_epoll_reading(int efd, struct epoll_event *ev, int socket_fd) {
+void setup_socket_for_epoll(int efd, struct epoll_event *ev, int socket_fd, int read_or_write, int add_or_mod) {
     ev->data.fd = socket_fd;
-    ev->events = EPOLLIN | EPOLLET;
-    if (epoll_ctl(efd, EPOLL_CTL_ADD, socket_fd, ev) < 0) {
+
+    if (read_or_write == READING)
+        ev->events = EPOLLIN | EPOLLET;
+    else if (read_or_write == WRITING)
+        ev->events = EPOLLOUT;
+
+    if (epoll_ctl(efd, add_or_mod, socket_fd, ev) < 0) {
         fprintf(stderr, "error adding event\n");
         exit(1);
     }
 }
 
-void register_socket_for_epoll_writing(int efd, struct epoll_event *ev, int socket_fd) {
-    ev->data.fd = socket_fd;
-    ev->events = EPOLLOUT;
-    if (epoll_ctl(efd, EPOLL_CTL_ADD, socket_fd, ev) < 0) {
-        fprintf(stderr, "error adding event\n");
-        exit(1);
-    }
-}
-
-int connect_to_client(int efd, struct epoll_event *ev) {
+void connect_to_client(event_data_t *event, int efd, struct epoll_event *ev) {
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
@@ -89,10 +89,11 @@ int connect_to_client(int efd, struct epoll_event *ev) {
 	    printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
 	}
 
-    return connfd;
+    // Set event's client socket fd to be the one returned from accept
+    event->client_socket_fd = connfd;
 }
 
-int connect_to_server(event_data_t *event) {
+void connect_to_server(event_data_t *event) {
     struct addrinfo hints;
 	struct addrinfo *result, *rp;
 	int sfd;
@@ -124,12 +125,13 @@ int connect_to_server(event_data_t *event) {
 
 	freeaddrinfo(result);           /* No longer needed */
 
-    return sfd;
+    // Set event's server socket fd to be the one returned from connect
+    event->server_socket_fd = sfd;
 }
 
 // Initialize event data for new event to be sent through proxy
-void init_event_data(event_data_t *event, int connfd) {
-    event->client_socket_fd = connfd;
+void init_event_data(event_data_t *event) {
+    event->client_socket_fd = 0;
     event->server_socket_fd = 0;
     memset(event->host, 0, MAX_OBJECT_SIZE);
     memset(event->port, 0, MAX_OBJECT_SIZE);
@@ -253,15 +255,14 @@ void read_request(event_data_t *event, int efd, struct epoll_event *ev) {
 
 	printf("server_req: %s\n", event->server_request);
 
-    // Set up a new socket
-    int socket_fd = connect_to_server(event);
-    event->server_socket_fd = socket_fd;    // Save sfd in event
+    // Set up a new socket for server
+    connect_to_server(event);
 
-    // Configure new socket as non-blocking
-    make_socket_nonblocking(socket_fd);
+    // Configure server socket as non-blocking
+    make_socket_nonblocking(event->server_socket_fd);
 
     // Register the socket w/ epoll instance for writing
-    register_socket_for_epoll_writing(efd, ev, socket_fd);
+    setup_socket_for_epoll(efd, ev, event->server_socket_fd, WRITING, EPOLL_CTL_ADD);
 
     // set state to next state
     event->state = STATE_SEND_REQ;
@@ -270,39 +271,6 @@ void read_request(event_data_t *event, int efd, struct epoll_event *ev) {
 // 2.  Proxy -> Server
 void send_request(event_data_t *event, int efd, struct epoll_event *ev) {
     // Call write to write the bytes received from client to the server
-
-    struct addrinfo hints;
-	struct addrinfo *result, *rp;
-
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_INET;	// IPv4
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = 0;
-	hints.ai_protocol = IPPROTO_TCP;	// TCP
-
-	// Connect to server
-
-	// Returns a list of address structures, so we try each address until we successfully connect
-	Getaddrinfo(event->host, event->port, &hints, &result);
-
-	for (rp = result; rp != NULL; rp = rp->ai_next) {
-		event->server_socket_fd = socket(rp->ai_family, rp->ai_socktype,
-				rp->ai_protocol);
-		if (event->server_socket_fd == -1)
-			continue;
-		if (connect(event->server_socket_fd, rp->ai_addr, rp->ai_addrlen) != -1)
-			break;                  /* Success */
-		close(event->server_socket_fd);
-	}
-	if (rp == NULL) {               /* No address succeeded */
-		fprintf(stderr, "Could not connect\n");
-		exit(EXIT_FAILURE);
-	}
-
-	freeaddrinfo(result);           /* No longer needed */
-
-    // Send request off to server
-
 	int chars_left = strlen(event->server_request);
     int chars_written = 0;
 	while ((chars_written = Write(event->server_socket_fd, event->server_request + event->bytes_written_to_server, chars_left)) > 0) {
@@ -311,6 +279,7 @@ void send_request(event_data_t *event, int efd, struct epoll_event *ev) {
 	}
 
     // Register the socket with the epoll instance for reading
+    setup_socket_for_epoll(efd, ev, event->server_socket_fd, READING, EPOLL_CTL_MOD);
 
     // set state to next state
     event->state = STATE_READ_RES;
@@ -329,7 +298,7 @@ void read_response(event_data_t *event, int efd, struct epoll_event *ev) {
     printf("Bytes read from server: %i\n", event->bytes_read_from_server);
 
     // Register the client socket with the epoll instance for writing
-    register_socket_for_epoll_writing(efd, ev, event->client_socket_fd);    // FIXME -- RIGHT SOCKET ID?
+    setup_socket_for_epoll(efd, ev, event->client_socket_fd, WRITING, EPOLL_CTL_MOD);
 
 	// set state to next state
 	event->state = STATE_SEND_RES;
@@ -351,7 +320,7 @@ void send_response(event_data_t *event, int efd, struct epoll_event *ev) {
 }
 
 int main(int argc, char **argv) {
-    int efd, listenfd, connfd;
+    int efd, listenfd;
     struct epoll_event event, *events;
 
     // Return if bad arguments
@@ -371,19 +340,9 @@ int main(int argc, char **argv) {
 
     // Make listen socket non-blocking
     make_socket_nonblocking(listenfd);
-    // if (fcntl(listenfd, F_SETFL, fcntl(listenfd, F_GETFL, 0) | O_NONBLOCK) < 0) {
-    //     fprintf(stderr, "error setting socket option\n");
-    //     exit(1);
-    // }
 
     // Register listen socket with epoll instance for reading
-    register_socket_for_epoll_reading(efd, &event, listenfd);
-    // event.data.fd = listenfd;
-    // event.events = EPOLLIN | EPOLLET;
-    // if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
-    //     fprintf(stderr, "error adding event\n");
-    //     exit(1);
-    // }
+    setup_socket_for_epoll(efd, &event, listenfd, READING, EPOLL_CTL_ADD);
 
     /* Events buffer used by epoll_wait to list triggered events */
     events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
@@ -406,23 +365,22 @@ int main(int argc, char **argv) {
 
             // When client wants to connect to proxy
             else if (events[i].data.fd == listenfd) {
-                connfd = connect_to_client(efd, &events[i]);
 
                 // Initialize active event
                 active_event = (event_data_t *) malloc(sizeof(event_data_t));
-                init_event_data(active_event, connfd);
+                init_event_data(active_event);
+
+                // Connect to client
+                connect_to_client(active_event, efd, &events[i]);
 
                 // Register struct as non-blocking
-                int flags = fcntl (connfd, F_GETFL, 0);
+                int flags = fcntl (active_event->client_socket_fd, F_GETFL, 0);
                 flags |= O_NONBLOCK;
-                fcntl (connfd, F_SETFL, flags);
+                fcntl (active_event->client_socket_fd, F_SETFL, flags);
 
-                event.data.ptr = active_event;
-                event.events = EPOLLIN | EPOLLET;
-                if (epoll_ctl(efd, EPOLL_CTL_ADD, connfd, &event) < 0) {
-                    fprintf(stderr, "error adding event\n");
-                    exit(1);
-                }            
+                // Register client socket for reading for first time
+                event.data.ptr = active_event;  // Also set the ptr to be the active event
+                setup_socket_for_epoll(efd, &event, active_event->client_socket_fd, READING, EPOLL_CTL_ADD);          
             }
 
             // Every other type of connection
