@@ -88,7 +88,7 @@ void connect_to_server(conn_state_t *conn_state) {
 	hints.ai_family = AF_INET;	// IPv4
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = 0;
-	hints.ai_protocol = IPPROTO_TCP;	// TCP
+	hints.ai_protocol = 0;	// TCP
 
 	// Connect to server
 
@@ -291,9 +291,14 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
 
     // Loop while the return val from read is not 0
     int cur_read = 0;
-	while ((cur_read = Read(conn_state->server_socket_fd, conn_state->server_response + conn_state->bytes_read_from_server, MAX_OBJECT_SIZE)) > 0) {
+	while ((cur_read = Read(conn_state->server_socket_fd, conn_state->server_response + conn_state->bytes_read_from_server, MAX_OBJECT_SIZE - conn_state->bytes_read_from_server)) > 0) {
 		conn_state->bytes_read_from_server += cur_read;
 	}
+
+    if (cur_read == -1) {   // Needs to come back to read more
+        return;
+    }
+
 	strcat(conn_state->server_response, "\0");	// Denote end of string 
 
     printf("Server response: %s\n", conn_state->server_response);
@@ -423,6 +428,7 @@ int main(int argc, char **argv) {
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
                         send_response(active_conn_state);
+                        // free(active_conn_state);
                         break;
                 }
             }
@@ -432,6 +438,7 @@ int main(int argc, char **argv) {
     }
 
     // Cleanup
+    free(events);
 
     return 0;
 }
