@@ -59,26 +59,12 @@ void make_socket_nonblocking(int fd) {
     }
 }
 
-void setup_socket_for_epoll(int efd, struct epoll_event *ev, int socket_fd, int read_or_write, int add_or_mod) {
-    ev->data.fd = socket_fd;
-
-    if (read_or_write == READING)
-        ev->events = EPOLLIN | EPOLLET;
-    else if (read_or_write == WRITING)
-        ev->events = EPOLLOUT;
-
-    if (epoll_ctl(efd, add_or_mod, socket_fd, ev) < 0) {
-        fprintf(stderr, "error adding event\n");
-        exit(1);
-    }
-}
-
-void connect_to_client(event_data_t *event, int efd, struct epoll_event *ev) {
+void connect_to_client(int listenfd, event_data_t *event) {
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
 
-    int connfd = Accept(ev->data.fd, (struct sockaddr *)(&in_addr), &addr_size);
+    int connfd = Accept(listenfd, (struct sockaddr *)(&in_addr), &addr_size);
 
 	/* get the client's IP addr and port num */
 	int s = getnameinfo ((struct sockaddr *)&in_addr, addr_size,
@@ -263,8 +249,13 @@ void read_request(event_data_t *event, int efd, struct epoll_event *ev) {
     // Configure server socket as non-blocking
     make_socket_nonblocking(event->server_socket_fd);
 
-    // Register the socket w/ epoll instance for writing
-    setup_socket_for_epoll(efd, ev, event->server_socket_fd, WRITING, EPOLL_CTL_ADD);
+    // Register the server socket w/ epoll instance for writing (OUT, ADD)
+    ev->data.ptr = event;
+    ev->events = EPOLLOUT | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_ADD, event->server_socket_fd, ev) < 0) {
+        fprintf(stderr, "Couldn't register server socket for writing with epoll\n");
+        exit(1);
+    }
 
     // Set state to next state
     event->state = STATE_SEND_REQ;
@@ -282,8 +273,13 @@ void send_request(event_data_t *event, int efd, struct epoll_event *ev) {
         chars_left -= chars_written;
 	}
 
-    // Register the socket with the epoll instance for reading
-    setup_socket_for_epoll(efd, ev, event->server_socket_fd, READING, EPOLL_CTL_MOD);
+    // Register the server socket with the epoll instance for reading (IN, MOD)
+    ev->data.ptr = event;
+    ev->events = EPOLLIN | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_MOD, event->server_socket_fd, ev) < 0) {
+        fprintf(stderr, "Couldn't register server socket for reading with epoll\n");
+        exit(1);
+    }
 
     // Set state to next state
     event->state = STATE_READ_RES;
@@ -303,8 +299,13 @@ void read_response(event_data_t *event, int efd, struct epoll_event *ev) {
     printf("Server response: %s\n", event->server_response);
     printf("Bytes read from server: %i\n", event->bytes_read_from_server);
 
-    // Register the client socket with the epoll instance for writing
-    setup_socket_for_epoll(efd, ev, event->client_socket_fd, WRITING, EPOLL_CTL_MOD);
+    // Register the client socket with the epoll instance for writing (OUT, MOD)
+    ev->data.ptr = event;
+    ev->events = EPOLLOUT | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_MOD, event->client_socket_fd, ev) < 0) {
+        fprintf(stderr, "Couldn't register client socket for writing with epoll\n");
+        exit(1);
+    }
 
 	// Set state to next state
 	event->state = STATE_SEND_RES;
@@ -349,14 +350,22 @@ int main(int argc, char **argv) {
     // Make listen socket non-blocking
     make_socket_nonblocking(listenfd);
 
-    // Register listen socket with epoll instance for reading
-    setup_socket_for_epoll(efd, &event, listenfd, READING, EPOLL_CTL_ADD);
+    // Register listen socket with epoll instance for reading (IN, ADD)
+    event_data_t listening_event;
+    init_event_data(&listening_event);
+    listening_event.client_socket_fd = listenfd;
+    event.data.ptr = &listening_event;
+    event.events = EPOLLIN | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
+        fprintf(stderr, "Couldn't register listen socket for reading with epoll\n");
+        exit(1);
+    }
 
     /* Events buffer used by epoll_wait to list triggered events */
     events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
 
     while(1) {
-        int num_events = epoll_wait(efd, events, MAX_EVENTS, -1);
+        int num_events = epoll_wait(efd, events, MAX_EVENTS, 1000);
         printf("num_events: %i\n", num_events);
         for (int i = 0; i < num_events; i++) {
             event_data_t* active_event = (event_data_t *) events[i].data.ptr;
@@ -372,27 +381,25 @@ int main(int argc, char **argv) {
 			}
 
             // When client wants to connect to proxy
-            else if (events[i].data.fd == listenfd) {
+            else if (active_event->client_socket_fd == listenfd) {
 
                 // Initialize active event
                 active_event = (event_data_t *) malloc(sizeof(event_data_t));
                 init_event_data(active_event);
 
                 // Connect to client
-                connect_to_client(active_event, efd, &events[i]);
+                connect_to_client(listenfd, active_event);
 
                 // Register struct as non-blocking
                 int flags = fcntl (active_event->client_socket_fd, F_GETFL, 0);
                 flags |= O_NONBLOCK;
                 fcntl (active_event->client_socket_fd, F_SETFL, flags);
 
-                // Register client socket for reading for first time (EPOLL_CTL_ADD)
-                // event.data.ptr = active_event;  // Also set the ptr to be the active event
-                // setup_socket_for_epoll(efd, &events[i], active_event->client_socket_fd, READING, EPOLL_CTL_ADD);  
+                // Register client socket for reading for first time (IN, ADD)
                 event.data.ptr = active_event;
                 event.events = EPOLLIN | EPOLLET;
                 if (epoll_ctl(efd, EPOLL_CTL_ADD, active_event->client_socket_fd, &event) < 0) {
-                    fprintf(stderr, "error adding event\n");
+                    fprintf(stderr, "Couldn't register client socket for reading with epoll\n");
                     exit(1);
                 }      
 
@@ -401,7 +408,6 @@ int main(int argc, char **argv) {
 
             // Every other type of connection
             else {
-                printf("got dito\n");    
                 printf("active_event->state in else: %i\n", active_event->state);    
                 switch (active_event->state) {
                     // 1.  Client -> Proxy
