@@ -386,9 +386,15 @@ int main(int argc, char **argv) {
                 flags |= O_NONBLOCK;
                 fcntl (active_event->client_socket_fd, F_SETFL, flags);
 
-                // Register client socket for reading for first time
-                event.data.ptr = active_event;  // Also set the ptr to be the active event
-                setup_socket_for_epoll(efd, &event, active_event->client_socket_fd, READING, EPOLL_CTL_ADD);  
+                // Register client socket for reading for first time (EPOLL_CTL_ADD)
+                // event.data.ptr = active_event;  // Also set the ptr to be the active event
+                // setup_socket_for_epoll(efd, &events[i], active_event->client_socket_fd, READING, EPOLL_CTL_ADD);  
+                event.data.ptr = active_event;
+                event.events = EPOLLIN | EPOLLET;
+                if (epoll_ctl(efd, EPOLL_CTL_ADD, active_event->client_socket_fd, &event) < 0) {
+                    fprintf(stderr, "error adding event\n");
+                    exit(1);
+                }      
 
                 printf("active_event->state in else if: %i\n", active_event->state);    
             }
