@@ -254,7 +254,7 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     event->events = EPOLLOUT | EPOLLET;
     if (epoll_ctl(efd, EPOLL_CTL_ADD, conn_state->server_socket_fd, event) < 0) {
         fprintf(stderr, "Couldn't register server socket for writing with epoll\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Set state to next state
@@ -278,7 +278,7 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     event->events = EPOLLIN | EPOLLET;
     if (epoll_ctl(efd, EPOLL_CTL_MOD, conn_state->server_socket_fd, event) < 0) {
         fprintf(stderr, "Couldn't register server socket for reading with epoll\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Set state to next state
@@ -304,7 +304,7 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
     event->events = EPOLLOUT | EPOLLET;
     if (epoll_ctl(efd, EPOLL_CTL_MOD, conn_state->client_socket_fd, event) < 0) {
         fprintf(stderr, "Couldn't register client socket for writing with epoll\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
 	// Set state to next state
@@ -335,13 +335,13 @@ int main(int argc, char **argv) {
     // Return if bad arguments
     if (argc < 2) {
         printf("Usage: %s portnumber\n", argv[0]);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Create an epoll instance
     if((efd = epoll_create1(0)) < 0) {
         printf("Unable to create epoll fd\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Set up listen socket
@@ -358,7 +358,7 @@ int main(int argc, char **argv) {
     event.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
         fprintf(stderr, "Couldn't register listen socket for reading with epoll\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /* Events buffer used by epoll_wait to list triggered events */
@@ -391,16 +391,14 @@ int main(int argc, char **argv) {
                 connect_to_client(listenfd, active_conn_state);
 
                 // Register struct as non-blocking
-                int flags = fcntl (active_conn_state->client_socket_fd, F_GETFL, 0);
-                flags |= O_NONBLOCK;
-                fcntl (active_conn_state->client_socket_fd, F_SETFL, flags);
+                make_socket_nonblocking(active_conn_state->client_socket_fd);
 
                 // Register client socket for reading for first time (IN, ADD)
                 event.data.ptr = active_conn_state;
                 event.events = EPOLLIN | EPOLLET;
                 if (epoll_ctl(efd, EPOLL_CTL_ADD, active_conn_state->client_socket_fd, &event) < 0) {
                     fprintf(stderr, "Couldn't register client socket for reading with epoll\n");
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }      
             }
 
