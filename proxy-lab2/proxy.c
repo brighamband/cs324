@@ -86,7 +86,7 @@ void connect_to_client(event_data_t *event, int efd, struct epoll_event *ev) {
                                    sbuf, sizeof sbuf,
                                    NI_NUMERICHOST | NI_NUMERICSERV);
 	if (s == 0) {
-	    printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
+	    printf("Accepted client connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
 	}
 
     // Set event's client socket fd to be the one returned from accept
@@ -115,6 +115,7 @@ void connect_to_server(event_data_t *event) {
 		if (sfd == -1)
 			continue;
 		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+            printf("Accepted server connection on descriptor %d (host=%s, port=%s)\n", sfd, event->host, event->port);
 			break;                  /* Success */
 		close(sfd);
 	}
@@ -238,10 +239,11 @@ void reformat_client_request(event_data_t *event) {
 
 // 1.  Client -> Proxy
 void read_request(event_data_t *event, int efd, struct epoll_event *ev) {
-	int cur_read = 0;	// Reused, num bytes read in a single call 
+    printf("read_request()\n");
 
     // Loop while it's not \r\n\r\n
     // Call read, and pass in the fd you returned from calls above
+	int cur_read = 0;
 	while ((cur_read = Read(event->client_socket_fd, event->client_request + cur_read, MAX_OBJECT_SIZE)) > 0) {	// Keeps going while still has bytes being read or until it's complete
 		if (is_complete_request(event->client_request))
 			break;
@@ -264,12 +266,14 @@ void read_request(event_data_t *event, int efd, struct epoll_event *ev) {
     // Register the socket w/ epoll instance for writing
     setup_socket_for_epoll(efd, ev, event->server_socket_fd, WRITING, EPOLL_CTL_ADD);
 
-    // set state to next state
+    // Set state to next state
     event->state = STATE_SEND_REQ;
 }
 
 // 2.  Proxy -> Server
 void send_request(event_data_t *event, int efd, struct epoll_event *ev) {
+    printf("send_request()\n");
+
     // Call write to write the bytes received from client to the server
 	int chars_left = strlen(event->server_request);
     int chars_written = 0;
@@ -281,14 +285,16 @@ void send_request(event_data_t *event, int efd, struct epoll_event *ev) {
     // Register the socket with the epoll instance for reading
     setup_socket_for_epoll(efd, ev, event->server_socket_fd, READING, EPOLL_CTL_MOD);
 
-    // set state to next state
+    // Set state to next state
     event->state = STATE_READ_RES;
 }
 
 // 3.  Server -> Proxy
 void read_response(event_data_t *event, int efd, struct epoll_event *ev) {
+    printf("read_response()\n");
+
     // Loop while the return val from read is not 0
-    int cur_read = 0;	// Reused, num bytes read in a single call 
+    int cur_read = 0;
 	while ((cur_read = Read(event->server_socket_fd, event->server_response + event->bytes_read_from_server, MAX_OBJECT_SIZE)) > 0) {
 		event->bytes_read_from_server += cur_read;
 	}
@@ -300,12 +306,14 @@ void read_response(event_data_t *event, int efd, struct epoll_event *ev) {
     // Register the client socket with the epoll instance for writing
     setup_socket_for_epoll(efd, ev, event->client_socket_fd, WRITING, EPOLL_CTL_MOD);
 
-	// set state to next state
+	// Set state to next state
 	event->state = STATE_SEND_RES;
 }
 
 // 4.  Proxy -> Client
 void send_response(event_data_t *event, int efd, struct epoll_event *ev) {
+    printf("send_response()\n");
+
 	// Call write to write bytes received from server to the client
 	int chars_left = event->bytes_read_from_server;
     int chars_written = 0;
@@ -380,33 +388,34 @@ int main(int argc, char **argv) {
 
                 // Register client socket for reading for first time
                 event.data.ptr = active_event;  // Also set the ptr to be the active event
-                setup_socket_for_epoll(efd, &event, active_event->client_socket_fd, READING, EPOLL_CTL_ADD);          
+                setup_socket_for_epoll(efd, &event, active_event->client_socket_fd, READING, EPOLL_CTL_ADD);  
+
+                printf("active_event->state in else if: %i\n", active_event->state);    
             }
 
             // Every other type of connection
             else {
+                printf("got dito\n");    
+                printf("active_event->state in else: %i\n", active_event->state);    
                 switch (active_event->state) {
                     // 1.  Client -> Proxy
                     case STATE_READ_REQ:
                         read_request(active_event, efd , &events[i]);
-                        break; // Commenting these out makes it kinda work
+                        break;
 
                     // 2.  Proxy -> Server
                     case STATE_SEND_REQ:
                         send_request(active_event, efd , &events[i]);
-                        break; // Commenting these out makes it kinda work
+                        break;
 
                     // 3.  Server -> Proxy
                     case STATE_READ_RES:
                         read_response(active_event, efd , &events[i]);
-                        break; // Commenting these out makes it kinda work
+                        break;
 
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
                         send_response(active_event, efd , &events[i]);
-                        break; // Commenting these out makes it kinda work
-
-                    default:
                         break;
                 }
             }

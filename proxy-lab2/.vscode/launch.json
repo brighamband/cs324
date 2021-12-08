@@ -9,7 +9,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${fileDirname}/${fileBasenameNoExtension}",
-      "args": ["www.example.com", "8.8.8.8"],
+      "args": ["23080"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
@@ -22,9 +22,10 @@
               "ignoreFailures": true
           }
       ],
-      "preLaunchTask": "C/C++: gcc build active file",
-      "miDebuggerPath": "/usr/bin/gdb"
-  }]
+      // "preLaunchTask": "C/C++: gcc build active file",
+      // "miDebuggerPath": "/usr/bin/gdb"
+    }
+  ]
 }
 
 
