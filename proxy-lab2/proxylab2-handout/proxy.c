@@ -360,8 +360,6 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
         return; 
     }
     
-	strcat(conn_state->server_response, "\0");	// Denote end of string 
-
     printf("Server response: %s\n", conn_state->server_response);
     printf("Bytes read from server: %i\n", conn_state->bytes_read_from_server);
 
