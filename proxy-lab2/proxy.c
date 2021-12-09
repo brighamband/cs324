@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include<errno.h>
 #include <netdb.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -230,10 +231,23 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     // Loop while it's not \r\n\r\n
     // Call read, and pass in the fd you returned from calls above
 	int cur_read = 0;
-	while ((cur_read = Read(conn_state->client_socket_fd, conn_state->client_request + cur_read, MAX_OBJECT_SIZE)) > 0) {	// Keeps going while still has bytes being read or until it's complete
+	while ((cur_read = Read(conn_state->client_socket_fd, conn_state->client_request + cur_read, MAX_OBJECT_SIZE - cur_read)) > 0) {	// Keeps going while still has bytes being read or until it's complete
 		if (is_complete_request(conn_state->client_request))
 			break;
 	}
+
+    if (cur_read < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
+            return; 
+        } else {  // Error -- so cancel client request, deregister socket, and break out
+            // Close file descriptors, close epoll instance
+            Close(conn_state->client_socket_fd);
+            Close(conn_state->server_socket_fd);
+            free(conn_state);
+            return; 
+        }
+    }
+
 	strcat(conn_state->client_request, "\0");	// Denote end of string 
 
 	printf("client_req: %s\n", conn_state->client_request);
@@ -273,6 +287,18 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         chars_left -= chars_written;
 	}
 
+    if (chars_written < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
+            return; 
+        } else {  // Error -- so cancel client request, deregister socket, and break out
+            // Close file descriptors, close epoll instance
+            Close(conn_state->client_socket_fd);
+            Close(conn_state->server_socket_fd);
+            free(conn_state);
+            return; 
+        }
+    }
+
     // Register the server socket with the epoll instance for reading (IN, MOD)
     event->data.ptr = conn_state;
     event->events = EPOLLIN | EPOLLET;
@@ -295,10 +321,17 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
 		conn_state->bytes_read_from_server += cur_read;
 	}
 
-    if (cur_read == -1) {   // Needs to come back to read more
-        return;
+    if (cur_read < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
+            return; 
+        } else {  // Error -- so cancel client request, deregister socket, and break out
+            // Close file descriptors, close epoll instance
+            Close(conn_state->client_socket_fd);
+            Close(conn_state->server_socket_fd);
+            free(conn_state);
+            return; 
+        }
     }
-
 	strcat(conn_state->server_response, "\0");	// Denote end of string 
 
     printf("Server response: %s\n", conn_state->server_response);
@@ -327,6 +360,18 @@ void send_response(conn_state_t *conn_state) {
         conn_state->bytes_written_to_client += chars_written;
 		chars_left -= chars_written;
 	}
+
+    if (chars_written < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
+            return; 
+        } else {  // Error -- so cancel client request, deregister socket, and break out
+            // Close file descriptors, close epoll instance
+            Close(conn_state->client_socket_fd);
+            Close(conn_state->server_socket_fd);
+            free(conn_state);
+            return; 
+        }
+    }
 
     // Close file descriptors, close epoll instance
     Close(conn_state->client_socket_fd);
@@ -428,7 +473,7 @@ int main(int argc, char **argv) {
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
                         send_response(active_conn_state);
-                        // free(active_conn_state);
+                        free(active_conn_state);
                         break;
                 }
             }
