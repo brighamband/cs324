@@ -63,24 +63,38 @@ void make_socket_nonblocking(int fd) {
     }
 }
 
-void connect_to_client(int listenfd, conn_state_t *conn_state) {
+void connect_to_client(int listenfd, conn_state_t *conn_state, int efd, struct epoll_event *event) {
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
 
-    int connfd = Accept(listenfd, (struct sockaddr *)(&in_addr), &addr_size);
 
-	/* get the client's IP addr and port num */
-	int s = getnameinfo ((struct sockaddr *)&in_addr, addr_size,
-                                   hbuf, sizeof hbuf,
-                                   sbuf, sizeof sbuf,
-                                   NI_NUMERICHOST | NI_NUMERICSERV);
-	if (s == 0) {
-	    printf("Accepted client connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
-	}
+    int connfd = 0;
+    while((connfd = accept(listenfd, (struct sockaddr *)(&in_addr), &addr_size)) > 0) {
 
-    // Set conn_state's client socket fd to be the one returned from accept
-    conn_state->client_socket_fd = connfd;
+        /* get the client's IP addr and port num */
+        int s = getnameinfo ((struct sockaddr *)&in_addr, addr_size,
+                                    hbuf, sizeof hbuf,
+                                    sbuf, sizeof sbuf,
+                                    NI_NUMERICHOST | NI_NUMERICSERV);
+        if (s == 0) {
+            printf("Accepted client connection on descriptor %d (host=%s, port=%s)\n", connfd, hbuf, sbuf);
+        }
+
+        // Set conn_state's client socket fd to be the one returned from accept
+        conn_state->client_socket_fd = connfd;
+
+        // Register struct as non-blocking
+        make_socket_nonblocking(conn_state->client_socket_fd);
+
+        // Register client socket for reading for first time (IN, ADD)
+        event->data.ptr = conn_state;
+        event->events = EPOLLIN | EPOLLET;
+        if (epoll_ctl(efd, EPOLL_CTL_ADD, conn_state->client_socket_fd, event) < 0) {
+            fprintf(stderr, "Couldn't register client socket for reading with epoll\n");
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 void connect_to_server(conn_state_t *conn_state) {
@@ -250,13 +264,13 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     if (!is_complete_request(conn_state->client_request)) {
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
-        Close(conn_state->client_socket_fd);
+        close(conn_state->client_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        Close(conn_state->server_socket_fd);
+        close(conn_state->server_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        free(conn_state);
+        // free(conn_state);
         return; 
     }
 
@@ -266,13 +280,13 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         } 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
-        Close(conn_state->client_socket_fd);
+        close(conn_state->client_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        Close(conn_state->server_socket_fd);
+        close(conn_state->server_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        free(conn_state);
+        // free(conn_state);
         return; 
     }
 
@@ -319,13 +333,13 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         } 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
-        Close(conn_state->client_socket_fd);
+        close(conn_state->client_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        Close(conn_state->server_socket_fd);
+        close(conn_state->server_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        free(conn_state);
+        // free(conn_state);
         return; 
     }
 
@@ -360,13 +374,13 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
         } 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
-        Close(conn_state->client_socket_fd);
+        close(conn_state->client_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        Close(conn_state->server_socket_fd);
+        close(conn_state->server_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        free(conn_state);
+        // free(conn_state);
         return; 
     }
     
@@ -403,24 +417,24 @@ void send_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
         } 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
-        Close(conn_state->client_socket_fd);
+        close(conn_state->client_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        Close(conn_state->server_socket_fd);
+        close(conn_state->server_socket_fd);
         // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
         //     fprintf(stderr, "error removing event\n");
-        free(conn_state);
+        // free(conn_state);
         return; 
     }
 
     // Close file descriptors, close epoll instance
     // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
     //     fprintf(stderr, "error removing event\n");
-    Close(conn_state->client_socket_fd);
+    close(conn_state->client_socket_fd);
     // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
     //     fprintf(stderr, "error removing event\n");
-    Close(conn_state->server_socket_fd);
-    free(conn_state);
+    close(conn_state->server_socket_fd);
+    // free(conn_state);
     return; 
 }
 
@@ -484,18 +498,18 @@ int main(int argc, char **argv) {
                 init_conn_state(active_conn_state);
 
                 // Connect to client
-                connect_to_client(listenfd, active_conn_state);
+                connect_to_client(listenfd, active_conn_state, efd, &events[i]);
 
-                // Register struct as non-blocking
-                make_socket_nonblocking(active_conn_state->client_socket_fd);
+                // // Register struct as non-blocking
+                // make_socket_nonblocking(active_conn_state->client_socket_fd);
 
-                // Register client socket for reading for first time (IN, ADD)
-                event.data.ptr = active_conn_state;
-                event.events = EPOLLIN | EPOLLET;
-                if (epoll_ctl(efd, EPOLL_CTL_ADD, active_conn_state->client_socket_fd, &event) < 0) {
-                    fprintf(stderr, "Couldn't register client socket for reading with epoll\n");
-                    exit(EXIT_FAILURE);
-                }      
+                // // Register client socket for reading for first time (IN, ADD)
+                // event.data.ptr = active_conn_state;
+                // event.events = EPOLLIN | EPOLLET;
+                // if (epoll_ctl(efd, EPOLL_CTL_ADD, active_conn_state->client_socket_fd, &event) < 0) {
+                //     fprintf(stderr, "Couldn't register client socket for reading with epoll\n");
+                //     exit(EXIT_FAILURE);
+                // }      
             }
 
             // Every other type of connection
