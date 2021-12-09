@@ -251,11 +251,11 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         Close(conn_state->client_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         Close(conn_state->server_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         free(conn_state);
         return; 
     }
@@ -267,11 +267,11 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         Close(conn_state->client_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         Close(conn_state->server_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         free(conn_state);
         return; 
     }
@@ -320,11 +320,11 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         Close(conn_state->client_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         Close(conn_state->server_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         free(conn_state);
         return; 
     }
@@ -361,11 +361,11 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         Close(conn_state->client_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         Close(conn_state->server_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         free(conn_state);
         return; 
     }
@@ -404,22 +404,22 @@ void send_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         Close(conn_state->client_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         Close(conn_state->server_socket_fd);
-        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-            fprintf(stderr, "error removing event\n");
+        // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
+        //     fprintf(stderr, "error removing event\n");
         free(conn_state);
         return; 
     }
 
     // Close file descriptors, close epoll instance
+    // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
+    //     fprintf(stderr, "error removing event\n");
     Close(conn_state->client_socket_fd);
-    if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-        fprintf(stderr, "error removing event\n");
+    // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
+    //     fprintf(stderr, "error removing event\n");
     Close(conn_state->server_socket_fd);
-    if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-        fprintf(stderr, "error removing event\n");
     free(conn_state);
     return; 
 }
@@ -519,7 +519,6 @@ int main(int argc, char **argv) {
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
                         send_response(active_conn_state, efd , &events[i]);
-                        free(active_conn_state);
                         break;
                 }
             }
