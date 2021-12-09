@@ -276,46 +276,7 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         if (is_complete_request(conn_state->client_request)) {    // Done reading
             break;
         }
-    }
-
-	// while ((cur_read = read(conn_state->client_socket_fd, conn_state->client_request + conn_state->bytes_read_from_client, MAX_OBJECT_SIZE - conn_state->bytes_read_from_client)) > 0) {	// Keeps going while still has bytes being read or until it's complete
-    //     conn_state->bytes_read_from_client += cur_read;
-
-	// 	if (is_complete_request(conn_state->client_request)) {
-    //         break; 
-    //     }
-	// }
-
-    // if (!is_complete_request(conn_state->client_request)) {
-    //     // Error -- so cancel client request, deregister socket, and break out
-    //     // Close file descriptors, close epoll instance
-    //     close(conn_state->client_socket_fd);
-    //     // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-    //     //     fprintf(stderr, "error removing event\n");
-    //     close(conn_state->server_socket_fd);
-    //     // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-    //     //     fprintf(stderr, "error removing event\n");
-    //     // free(conn_state);
-    //     return; 
-    // }
-
-    // if (cur_read < 0) {
-    //     if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
-    //         return; 
-    //     } 
-    //     // Error -- so cancel client request, deregister socket, and break out
-    //     // Close file descriptors, close epoll instance
-    //     close(conn_state->client_socket_fd);
-    //     // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
-    //     //     fprintf(stderr, "error removing event\n");
-    //     close(conn_state->server_socket_fd);
-    //     // if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
-    //     //     fprintf(stderr, "error removing event\n");
-    //     // free(conn_state);
-    //     return; 
-    // }
-
-	// strcat(conn_state->client_request, "\0");	// Denote end of string 
+    } 
 
 	printf("client_req: %s\n", conn_state->client_request);
 
