@@ -272,7 +272,7 @@ void read_request(conn_state_t *conn_state, int efd) {
             // Error -- so cancel client request, deregister socket, and break out
             // Close file descriptors, close epoll instance
             close(conn_state->client_socket_fd);
-            close(conn_state->server_socket_fd);
+            close(conn_state->server_socket_fd);    // FIXME - May not need because hasn't been opened
             return; 
         }
 
@@ -364,9 +364,10 @@ void read_response(conn_state_t *conn_state, int efd) {
         close(conn_state->server_socket_fd);
         return; 
     }
-    
-    strcat(conn_state->server_response, "\0");	// Denote end of string 
 
+    // Close the server socket now that we don't need it
+    close(conn_state->server_socket_fd);
+    
     printf("Server response: %s\n", conn_state->server_response);
     printf("Bytes read from server: %i\n", conn_state->bytes_read_from_server);
 
@@ -400,7 +401,7 @@ void send_response(conn_state_t *conn_state, int efd) {
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         close(conn_state->client_socket_fd);
-        close(conn_state->server_socket_fd);
+        close(conn_state->server_socket_fd);    // FIXME - Maybe remove, might already be closed
         return; 
     }
 
@@ -408,7 +409,7 @@ void send_response(conn_state_t *conn_state, int efd) {
 
     // Close file descriptors, close epoll instance
     close(conn_state->client_socket_fd);
-    close(conn_state->server_socket_fd);
+    close(conn_state->server_socket_fd);    // FIXME - Maybe remove, might already be closed
 }
 
 int main(int argc, char **argv) {
