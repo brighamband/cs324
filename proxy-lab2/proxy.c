@@ -46,13 +46,13 @@ typedef struct {
     char client_request[MAX_OBJECT_SIZE];
     char server_request[MAX_OBJECT_SIZE];
     char server_response[MAX_OBJECT_SIZE];
-    unsigned int state;
-    unsigned int bytes_read_from_client;
-    unsigned int bytes_to_write_server;
-    unsigned int bytes_written_to_server;
-    unsigned int bytes_read_from_server; 
-    unsigned int bytes_to_write_client;
-    unsigned int bytes_written_to_client;
+    int state;
+    int bytes_read_from_client;
+    int bytes_to_write_server;
+    int bytes_written_to_server;
+    int bytes_read_from_server; 
+    int bytes_to_write_client;
+    int bytes_written_to_client;
 } conn_state_t;
 
 conn_state_t events[MAX_EVENTS];
