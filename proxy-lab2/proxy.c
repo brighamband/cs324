@@ -239,13 +239,13 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     if (cur_read < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
             return; 
-        } else {  // Error -- so cancel client request, deregister socket, and break out
-            // Close file descriptors, close epoll instance
-            Close(conn_state->client_socket_fd);
-            Close(conn_state->server_socket_fd);
-            free(conn_state);
-            return; 
-        }
+        } 
+        // Error -- so cancel client request, deregister socket, and break out
+        // Close file descriptors, close epoll instance
+        Close(conn_state->client_socket_fd);
+        Close(conn_state->server_socket_fd);
+        free(conn_state);
+        return; 
     }
 
 	strcat(conn_state->client_request, "\0");	// Denote end of string 
@@ -290,13 +290,13 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     if (chars_written < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
             return; 
-        } else {  // Error -- so cancel client request, deregister socket, and break out
-            // Close file descriptors, close epoll instance
-            Close(conn_state->client_socket_fd);
-            Close(conn_state->server_socket_fd);
-            free(conn_state);
-            return; 
-        }
+        } 
+        // Error -- so cancel client request, deregister socket, and break out
+        // Close file descriptors, close epoll instance
+        Close(conn_state->client_socket_fd);
+        Close(conn_state->server_socket_fd);
+        free(conn_state);
+        return; 
     }
 
     // Register the server socket with the epoll instance for reading (IN, MOD)
@@ -324,14 +324,15 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
     if (cur_read < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
             return; 
-        } else {  // Error -- so cancel client request, deregister socket, and break out
-            // Close file descriptors, close epoll instance
-            Close(conn_state->client_socket_fd);
-            Close(conn_state->server_socket_fd);
-            free(conn_state);
-            return; 
-        }
+        } 
+        // Error -- so cancel client request, deregister socket, and break out
+        // Close file descriptors, close epoll instance
+        Close(conn_state->client_socket_fd);
+        Close(conn_state->server_socket_fd);
+        free(conn_state);
+        return; 
     }
+    
 	strcat(conn_state->server_response, "\0");	// Denote end of string 
 
     printf("Server response: %s\n", conn_state->server_response);
@@ -364,13 +365,13 @@ void send_response(conn_state_t *conn_state) {
     if (chars_written < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {  // Just means you need to stop and come back later
             return; 
-        } else {  // Error -- so cancel client request, deregister socket, and break out
-            // Close file descriptors, close epoll instance
-            Close(conn_state->client_socket_fd);
-            Close(conn_state->server_socket_fd);
-            free(conn_state);
-            return; 
-        }
+        } 
+        // Error -- so cancel client request, deregister socket, and break out
+        // Close file descriptors, close epoll instance
+        Close(conn_state->client_socket_fd);
+        Close(conn_state->server_socket_fd);
+        free(conn_state);
+        return; 
     }
 
     // Close file descriptors, close epoll instance
