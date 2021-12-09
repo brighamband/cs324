@@ -251,7 +251,11 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         Close(conn_state->client_socket_fd);
+        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->client_socket_fd, event) < 0)
+            fprintf(stderr, "error removing event\n");
         Close(conn_state->server_socket_fd);
+        if (epoll_ctl(efd, EPOLL_CTL_DEL, conn_state->server_socket_fd, event) < 0)
+            fprintf(stderr, "error removing event\n");
         free(conn_state);
         return; 
     }
