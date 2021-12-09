@@ -15,7 +15,8 @@
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
 
-#define MAX_EVENTS 25
+#define MAX_STATES 25
+#define MAX_EVENTS 100
 #define MAX_HOST_SIZE 1024
 #define MAX_PORT_SIZE 16
 #define MAX_METHOD_SIZE 32
@@ -55,7 +56,7 @@ typedef struct {
     int bytes_written_to_client;
 } conn_state_t;
 
-conn_state_t events[MAX_EVENTS];
+conn_state_t conn_states[MAX_STATES];
 
 void make_socket_nonblocking(int fd) {
     if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK) < 0) {
@@ -63,7 +64,7 @@ void make_socket_nonblocking(int fd) {
     }
 }
 
-void connect_to_client(int listenfd, conn_state_t *conn_state, int efd, struct epoll_event *event) {
+void connect_to_client(int listenfd, conn_state_t *conn_state, int efd) {
 	struct sockaddr_in in_addr;
 	unsigned int addr_size = sizeof(in_addr);
 	char hbuf[MAXLINE], sbuf[MAXLINE];
@@ -88,13 +89,14 @@ void connect_to_client(int listenfd, conn_state_t *conn_state, int efd, struct e
         // Set conn_state's client socket fd to be the one returned from accept
         conn_state->client_socket_fd = connfd;
 
-        // Register struct as non-blocking
+        // Register client as non-blocking
         make_socket_nonblocking(conn_state->client_socket_fd);
 
         // Register client socket for reading for first time (IN, ADD)
-        event->data.ptr = conn_state;
-        event->events = EPOLLIN | EPOLLET;
-        if (epoll_ctl(efd, EPOLL_CTL_ADD, conn_state->client_socket_fd, event) < 0) {
+        struct epoll_event tmp_event;
+        tmp_event.data.ptr = conn_state;
+        tmp_event.events = EPOLLIN | EPOLLET;
+        if (epoll_ctl(efd, EPOLL_CTL_ADD, conn_state->client_socket_fd, &tmp_event) < 0) {
             fprintf(stderr, "Couldn't register client socket for reading with epoll\n");
             exit(EXIT_FAILURE);
         }
@@ -251,7 +253,7 @@ void reformat_client_request(conn_state_t *conn_state) {
 }
 
 // 1.  Client -> Proxy
-void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) {
+void read_request(conn_state_t *conn_state, int efd) {
     printf("read_request()\n");
 
     // Loop while it's not \r\n\r\n
@@ -269,7 +271,7 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
             // Error -- so cancel client request, deregister socket, and break out
             // Close file descriptors, close epoll instance
             close(conn_state->client_socket_fd);
-            close(conn_state->server_socket_fd);
+            // close(conn_state->server_socket_fd); // Shouldn't need to close, never opened
             return; 
         }
 
@@ -292,9 +294,10 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     make_socket_nonblocking(conn_state->server_socket_fd);
 
     // Register the server socket w/ epoll instance for writing (OUT, ADD)
-    event->data.ptr = conn_state;
-    event->events = EPOLLOUT | EPOLLET;
-    if (epoll_ctl(efd, EPOLL_CTL_ADD, conn_state->server_socket_fd, event) < 0) {
+    struct epoll_event tmp_event;
+    tmp_event.data.ptr = conn_state;
+    tmp_event.events = EPOLLOUT | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_ADD, conn_state->server_socket_fd, &tmp_event) < 0) {
         fprintf(stderr, "Couldn't register server socket for writing with epoll\n");
         exit(EXIT_FAILURE);
     }
@@ -304,7 +307,7 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
 }
 
 // 2.  Proxy -> Server
-void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) {
+void send_request(conn_state_t *conn_state, int efd) {
     printf("send_request()\n");
 
     // Call write to write the bytes received from client to the server
@@ -325,9 +328,10 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     }
 
     // Register the server socket with the epoll instance for reading (IN, MOD)
-    event->data.ptr = conn_state;
-    event->events = EPOLLIN | EPOLLET;
-    if (epoll_ctl(efd, EPOLL_CTL_MOD, conn_state->server_socket_fd, event) < 0) {
+    struct epoll_event tmp_event;
+    tmp_event.data.ptr = conn_state;
+    tmp_event.events = EPOLLIN | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_MOD, conn_state->server_socket_fd, &tmp_event) < 0) {
         fprintf(stderr, "Couldn't register server socket for reading with epoll\n");
         exit(EXIT_FAILURE);
     }
@@ -337,7 +341,7 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
 }
 
 // 3.  Server -> Proxy
-void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event) {
+void read_response(conn_state_t *conn_state, int efd) {
     printf("read_response()\n");
 
     // Loop while the return val from read is not 0
@@ -360,13 +364,17 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
         return; 
     }
     
+    // Close server fd
+    close(conn_state->server_socket_fd);
+
     printf("Server response: %s\n", conn_state->server_response);
     printf("Bytes read from server: %i\n", conn_state->bytes_read_from_server);
 
     // Register the client socket with the epoll instance for writing (OUT, MOD)
-    event->data.ptr = conn_state;
-    event->events = EPOLLOUT | EPOLLET;
-    if (epoll_ctl(efd, EPOLL_CTL_MOD, conn_state->client_socket_fd, event) < 0) {
+    struct epoll_event tmp_event;
+    tmp_event.data.ptr = conn_state;
+    tmp_event.events = EPOLLOUT | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_MOD, conn_state->client_socket_fd, &tmp_event) < 0) {
         fprintf(stderr, "Couldn't register client socket for writing with epoll\n");
         exit(EXIT_FAILURE);
     }
@@ -376,7 +384,7 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
 }
 
 // 4.  Proxy -> Client
-void send_response(conn_state_t *conn_state, int efd, struct epoll_event *event) {
+void send_response(conn_state_t *conn_state, int efd) {
     printf("send_response()\n");
 
 	// Call write to write bytes received from server to the client
@@ -392,7 +400,7 @@ void send_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         close(conn_state->client_socket_fd);
-        close(conn_state->server_socket_fd);
+        // close(conn_state->server_socket_fd);    // Shouldn't need to close, already closed
         return; 
     }
 
@@ -400,13 +408,10 @@ void send_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
 
     // Close file descriptors, close epoll instance
     close(conn_state->client_socket_fd);
-    close(conn_state->server_socket_fd);
+    // close(conn_state->server_socket_fd);    // Shouldn't need to close, already closed
 }
 
 int main(int argc, char **argv) {
-    int efd, listenfd;
-    struct epoll_event event, *events;
-
     // Return if bad arguments
     if (argc < 2) {
         printf("Usage: %s portnumber\n", argv[0]);
@@ -414,13 +419,14 @@ int main(int argc, char **argv) {
     }
 
     // Create an epoll instance
+    int efd = 0;
     if((efd = epoll_create1(0)) < 0) {
         printf("Unable to create epoll fd\n");
         exit(EXIT_FAILURE);
     }
 
-    // Set up listen socket                                 // TRY BEFORE
-    listenfd = Open_listenfd(argv[1]);
+    // Set up listen socket                                
+    int listenfd = Open_listenfd(argv[1]);
 
     // Make listen socket non-blocking
     make_socket_nonblocking(listenfd);
@@ -429,6 +435,7 @@ int main(int argc, char **argv) {
     conn_state_t listen_conn_state;
     init_conn_state(&listen_conn_state);
     listen_conn_state.client_socket_fd = listenfd;
+    struct epoll_event event;
     event.data.ptr = &listen_conn_state;
     event.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event) < 0) {
@@ -437,7 +444,7 @@ int main(int argc, char **argv) {
     }
 
     /* Events buffer used by epoll_wait to list triggered events */
-    events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
+    struct epoll_event *events = (struct epoll_event*) calloc (MAX_EVENTS, sizeof(event));
 
     while(1) {
         int num_events = epoll_wait(efd, events, MAX_EVENTS, 1000);
@@ -449,10 +456,9 @@ int main(int argc, char **argv) {
             if ((events[i].events & EPOLLERR) ||
 					(events[i].events & EPOLLHUP) ||
 					(events[i].events & EPOLLRDHUP)) {
-				// fprintf (stderr, "epoll error\n");
                 perror("epoll error");
-				close(events[i].data.fd);
-				free(active_conn_state);
+				close(active_conn_state->client_socket_fd);
+				close(active_conn_state->server_socket_fd);
 				continue;
 			}
 
@@ -460,11 +466,11 @@ int main(int argc, char **argv) {
             else if (active_conn_state->client_socket_fd == listenfd) {
 
                 // Initialize active event
-                active_conn_state = (conn_state_t *) malloc(sizeof(conn_state_t));
+                active_conn_state = &conn_states[i];
                 init_conn_state(active_conn_state);
 
                 // Connect to client
-                connect_to_client(listenfd, active_conn_state, efd, &events[i]);    
+                connect_to_client(listenfd, active_conn_state, efd);    
             }
 
             // Every other type of connection
@@ -472,22 +478,22 @@ int main(int argc, char **argv) {
                 switch (active_conn_state->state) {
                     // 1.  Client -> Proxy
                     case STATE_READ_REQ:
-                        read_request(active_conn_state, efd , &events[i]);
+                        read_request(active_conn_state, efd);
                         break;
 
                     // 2.  Proxy -> Server
                     case STATE_SEND_REQ:
-                        send_request(active_conn_state, efd , &events[i]);
+                        send_request(active_conn_state, efd);
                         break;
 
                     // 3.  Server -> Proxy
                     case STATE_READ_RES:
-                        read_response(active_conn_state, efd , &events[i]);
+                        read_response(active_conn_state, efd);
                         break;
 
                     // 4.  Proxy -> Client
                     case STATE_SEND_RES:
-                        send_response(active_conn_state, efd , &events[i]);
+                        send_response(active_conn_state, efd);
                         break;
                 }
             }
