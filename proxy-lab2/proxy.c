@@ -231,7 +231,7 @@ void read_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     // Loop while it's not \r\n\r\n
     // Call read, and pass in the fd you returned from calls above
 	int cur_read = 0;
-	while ((cur_read = Read(conn_state->client_socket_fd, conn_state->client_request + cur_read, MAX_OBJECT_SIZE - cur_read)) > 0) {	// Keeps going while still has bytes being read or until it's complete
+	while ((cur_read = read(conn_state->client_socket_fd, conn_state->client_request + cur_read, MAX_OBJECT_SIZE - cur_read)) > 0) {	// Keeps going while still has bytes being read or until it's complete
 		if (is_complete_request(conn_state->client_request))
 			break;
 	}
@@ -282,7 +282,7 @@ void send_request(conn_state_t *conn_state, int efd, struct epoll_event *event) 
     // Call write to write the bytes received from client to the server
 	int chars_left = strlen(conn_state->server_request);
     int chars_written = 0;
-	while ((chars_written = Write(conn_state->server_socket_fd, conn_state->server_request + conn_state->bytes_written_to_server, chars_left)) > 0) {
+	while ((chars_written = write(conn_state->server_socket_fd, conn_state->server_request + conn_state->bytes_written_to_server, chars_left)) > 0) {
 		conn_state->bytes_written_to_server += chars_written;
         chars_left -= chars_written;
 	}
@@ -317,7 +317,7 @@ void read_response(conn_state_t *conn_state, int efd, struct epoll_event *event)
 
     // Loop while the return val from read is not 0
     int cur_read = 0;
-	while ((cur_read = Read(conn_state->server_socket_fd, conn_state->server_response + conn_state->bytes_read_from_server, MAX_OBJECT_SIZE - conn_state->bytes_read_from_server)) > 0) {
+	while ((cur_read = read(conn_state->server_socket_fd, conn_state->server_response + conn_state->bytes_read_from_server, MAX_OBJECT_SIZE - conn_state->bytes_read_from_server)) > 0) {
 		conn_state->bytes_read_from_server += cur_read;
 	}
 
@@ -357,7 +357,7 @@ void send_response(conn_state_t *conn_state) {
 	// Call write to write bytes received from server to the client
 	int chars_left = conn_state->bytes_read_from_server;
     int chars_written = 0;
-	while ((chars_written = Write(conn_state->client_socket_fd, conn_state->server_response + conn_state->bytes_written_to_client, chars_left)) > 0) {
+	while ((chars_written = write(conn_state->client_socket_fd, conn_state->server_response + conn_state->bytes_written_to_client, chars_left)) > 0) {
         conn_state->bytes_written_to_client += chars_written;
 		chars_left -= chars_written;
 	}
