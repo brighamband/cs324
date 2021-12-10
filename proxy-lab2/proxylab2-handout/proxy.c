@@ -10,12 +10,11 @@
 
 // curl -v --proxy http://localhost:23080 http://localhost:23081/home.html
 
-
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
 
-#define MAX_STATES 50
+#define MAX_STATES 100
 #define MAX_EVENTS 100
 #define MAX_HOST_SIZE 1024
 #define MAX_PORT_SIZE 16
@@ -401,7 +400,6 @@ void send_response(conn_state_t *conn_state, int efd) {
         // Error -- so cancel client request, deregister socket, and break out
         // Close file descriptors, close epoll instance
         close(conn_state->client_socket_fd);
-        // close(conn_state->server_socket_fd);    // FIXME - Maybe remove, might already be closed
         return; 
     }
 
@@ -409,17 +407,6 @@ void send_response(conn_state_t *conn_state, int efd) {
 
     // Close file descriptors, close epoll instance
     close(conn_state->client_socket_fd);
-    // close(conn_state->server_socket_fd);    // FIXME - Maybe remove, might already be closed
-}
-
-// Returns the index of the next available conn state (returns -1 if none are available)
-int find_available_conn_state_idx() {
-    printf("finding...\n");
-    for (int i = 0; i < MAX_STATES; i++) {
-        if (conn_states[i].client_socket_fd == 0 && conn_states[i].server_socket_fd == 0)
-            return i;
-    }
-    return -1;
 }
 
 int main(int argc, char **argv) {
@@ -475,22 +462,17 @@ int main(int argc, char **argv) {
                     (events[i].events & EPOLLHUP) ||
                     (events[i].events & EPOLLRDHUP)) {
                 perror("epoll error");
-                close(events[i].data.fd);   // FIXME
                 continue;
             }
 
             // When client wants to connect to proxy
             else if (active_conn_state->client_socket_fd == listenfd) {
 
-                // int new_idx = find_available_conn_state_idx();
-                // printf("found new_idx at %i\n", new_idx);
-
                 // Initialize active event
                 active_conn_state = &conn_states[conn_state_idx];
                 conn_state_idx += 1;
                 if (conn_state_idx >= MAX_STATES)
                     conn_state_idx = 0;
-                // init_conn_state(active_conn_state);
 
                 // Connect to client
                 connect_to_client(listenfd, active_conn_state, efd);    
