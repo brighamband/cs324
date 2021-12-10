@@ -428,7 +428,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // Set up listen socket                                 // TRY BEFORE
+    // Set up listen socket
     listenfd = Open_listenfd(argv[1]);
 
     // Make listen socket non-blocking
