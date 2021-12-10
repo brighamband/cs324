@@ -458,7 +458,6 @@ int main(int argc, char **argv) {
             if ((events[i].events & EPOLLERR) ||
                     (events[i].events & EPOLLHUP) ||
                     (events[i].events & EPOLLRDHUP)) {
-                // fprintf (stderr, "epoll error\n");
                 perror("epoll error");
                 close(events[i].data.fd);
                 continue;
